@@ -1,0 +1,166 @@
+{
+  "name": "SpaceRammer",
+  "levelPaths": ["."],
+  "backgroundColor": "#222034ff",
+  "gridColor": "#3c4049cc",
+  "anglesRadians": true,
+  "directoryDepth": 5,
+  "levelDefaultSize": {"x": 320, "y": 240},
+  "levelMinSize": {"x": 128, "y": 128},
+  "levelMaxSize": {"x": 4096, "y": 4096},
+  "levelValues": [],
+  "defaultExportMode": ".json",
+  "entityTags": ["PodGroup"],
+  "layers": [
+    {
+      "definition": "tile",
+      "name": "Geom",
+      "gridSize": {"x": 8, "y": 8},
+      "exportID": "37593276",
+      "exportMode": 0,
+      "arrayMode": 0,
+      "defaultTileset": "Main"
+    },
+    {
+      "definition": "entity",
+      "name": "Entities",
+      "gridSize": {"x": 8, "y": 8},
+      "exportID": "38315240",
+      "requiredTags": [],
+      "excludedTags": []
+    }
+  ],
+  "entities": [
+    {
+      "exportID": "37634167",
+      "name": "Enemy",
+      "limit": -1,
+      "size": {"x": 18, "y": 18},
+      "origin": {"x": 9, "y": 9},
+      "originAnchored": true,
+      "shape": {
+        "label": "Rectangle",
+        "points": [
+          {"x": -1, "y": -1},
+          {"x": 1, "y": -1},
+          {"x": -1, "y": 1},
+          {"x": 1, "y": -1},
+          {"x": -1, "y": 1},
+          {"x": 1, "y": 1}
+        ]
+      },
+      "color": "#ff0000ff",
+      "tileX": false,
+      "tileY": false,
+      "tileSize": {"x": 16, "y": 16},
+      "resizeableX": false,
+      "resizeableY": false,
+      "rotatable": true,
+      "rotationDegrees": 360,
+      "canFlipX": false,
+      "canFlipY": false,
+      "canSetColor": false,
+      "hasNodes": false,
+      "nodeLimit": 0,
+      "nodeDisplay": 0,
+      "nodeGhost": false,
+      "tags": ["PodGroup"],
+      "values": [
+        {
+          "name": "difficulty",
+          "definition": "Integer",
+          "defaults": 0,
+          "bounded": false,
+          "min": 0,
+          "max": 3
+        },
+        {
+          "name": "id",
+          "definition": "String",
+          "defaults": "",
+          "maxLength": 30,
+          "trimWhitespace": true
+        },
+        {
+          "name": "maxSpeed",
+          "definition": "Float",
+          "defaults": 100,
+          "bounded": false,
+          "min": 0,
+          "max": 100
+        },
+        {
+          "name": "turnSpeed",
+          "definition": "Float",
+          "defaults": 90,
+          "bounded": false,
+          "min": 0,
+          "max": 3600
+        },
+        {
+          "name": "fireRate",
+          "definition": "Float",
+          "defaults": 3,
+          "bounded": true,
+          "min": 0.1,
+          "max": 100
+        }
+      ]
+    },
+    {
+      "exportID": "38326751",
+      "name": "Hero",
+      "limit": 1,
+      "size": {"x": 16, "y": 16},
+      "origin": {"x": 0, "y": 0},
+      "originAnchored": true,
+      "shape": {
+        "label": "Rectangle",
+        "points": [
+          {"x": -1, "y": -1},
+          {"x": 1, "y": -1},
+          {"x": -1, "y": 1},
+          {"x": 1, "y": -1},
+          {"x": -1, "y": 1},
+          {"x": 1, "y": 1}
+        ]
+      },
+      "color": "#00ffffff",
+      "tileX": false,
+      "tileY": false,
+      "tileSize": {"x": 16, "y": 16},
+      "resizeableX": false,
+      "resizeableY": false,
+      "rotatable": false,
+      "rotationDegrees": 360,
+      "canFlipX": false,
+      "canFlipY": false,
+      "canSetColor": false,
+      "hasNodes": false,
+      "nodeLimit": 0,
+      "nodeDisplay": 0,
+      "nodeGhost": true,
+      "tags": ["PodGroup"],
+      "values": [
+        {
+          "name": "id",
+          "definition": "String",
+          "defaults": "",
+          "maxLength": 0,
+          "trimWhitespace": true
+        }
+      ]
+    }
+  ],
+  "tilesets": [
+    {
+      "label": "Main",
+      "path": "../images/Tiles.png",
+      "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAAICAMAAAAGAwdMAAAAAXNSR0IArs4c6QAAAGBQTFRFAAAAIiA0RSg8Zjkxj1Y733Em2aBm7sOa+/I2meVQar4wN5RuS2kvUkskMjw5Pz90MGCCW27hY5v/X83ky9v8////m623hH6HaWpqWVZSdkKKrDIy2Vdj13u6j5dKim8w+2O8zwAAACB0Uk5TAP////////////////////////////////////////+Smq12AAAAaUlEQVQ4je1TQQ6AMAjjEyT9/0vVOdTCZnf0YC8NlEFDmBkaDH6Qo8c4Y0DpoDJOruh74wbEgB77VSv0CGOAc0Lqdjd+MhK/6LV4gLn+G/iCgTgyYudjmxso5QnSgI05fTe1AZRnqxvYAFX/XBFhg9RrAAAAAElFTkSuQmCC",
+      "tileWidth": 8,
+      "tileHeight": 8,
+      "tileSeparationX": 0,
+      "tileSeparationY": 0
+    }
+  ]
+}
