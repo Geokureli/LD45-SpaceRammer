@@ -21,7 +21,7 @@ class Main extends Sprite
     
     function onAddedToStage(e = null) {
         
-        final zoom = 2;
+        final zoom = 1;
         addChild
         ( new FlxGame
             ( Std.int(stage.stageWidth  / zoom)

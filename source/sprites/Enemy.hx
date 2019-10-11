@@ -1,7 +1,9 @@
 package sprites;
 
-import states.OgmoState;
 import flixel.math.FlxVector;
+
+import states.OgmoState;
+import sprites.pods.*;
 
 class Enemy extends PodGroup
 {
@@ -12,7 +14,7 @@ class Enemy extends PodGroup
     {
         super(x, y);
         cockpit.defaultColor = 0xFFfbf236;
-        fireRate = 3;
+        fireRate = 1;
     }
     
     override function ogmoInit(data:OgmoEntityData, parent:OgmoEntityLayer):Void
@@ -31,13 +33,13 @@ class Enemy extends PodGroup
         {
             case 0:
                 cockpit.defaultColor = 0xFF847e87;
-                linkPod(new Pod(Thruster, x       , y + rad2));
-                linkPod(new Pod(Laser   , x       , y - rad2)).tutorialInvincible = true;
+                linkPod(new Pod(Thruster, x - rad2, y));
+                linkPod(new Pod(Laser   , x + rad2, y));
             case 1:
-                var pod = linkPod(new Pod(Laser, x, y - rad2));
-                linkPod(new Pod(Laser   , x + rad2, y - rad2), pod);
-                linkPod(new Pod(Laser   , x - rad2, y - rad2), pod);
-                linkPod(new Pod(Thruster, x       , y + rad2));
+                var pod = linkPod(new Pod(Laser, x + rad2, y));
+                linkPod(new Pod(Laser   , x + rad2, y - rad2, -45), pod);
+                linkPod(new Pod(Laser   , x + rad2, y + rad2,  45), pod);
+                linkPod(new Pod(Thruster, x - rad2, y));
         }
         
         cockpit.angle = data.rotation;
@@ -46,9 +48,9 @@ class Enemy extends PodGroup
         fireRate = data.values.fireRate;
     }
     
-    override function update(elapsed:Float)
+    override function updateControls(elapsed:Float)
     {
-        super.update(elapsed);
+        super.updateControls(elapsed);
         
         if (difficulty == 0)
             return;
@@ -59,7 +61,7 @@ class Enemy extends PodGroup
         var distance = FlxVector.get(hero.x - x, hero.y - y);
         var length = distance.length;
         if (length < 500 && length > 100)
-            thrust.copyFrom(distance).scale(distance.length);
+            thrust.copyFrom(distance).scale(1 / length);
         
         focus.copyFrom(distance);
         

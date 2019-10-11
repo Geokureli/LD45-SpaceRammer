@@ -60,12 +60,13 @@ class OgmoTilemap extends FlxTilemap
         x = data.offsetX;
         y = data.offsetY;
         loadMapFromArray
-            ( data.data
+            ( data.data.map(i->i+1)
             , data.gridCellsX
             , data.gridCellsY
             , "assets/images/tiles.png"
             , data.gridCellWidth
             , data.gridCellHeight
+            , AUTO
             , 0
             , 0
             , 0

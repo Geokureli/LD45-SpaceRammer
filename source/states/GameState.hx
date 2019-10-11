@@ -9,13 +9,10 @@ import flixel.tile.FlxTilemap;
 
 import openfl.display.Bitmap;
 
-import sprites.Bullet;
-import sprites.Cockpit;
-import sprites.Enemy;
-import sprites.Hero;
-import sprites.Pod;
-import sprites.PodGroup;
-import states.OgmoState.OgmoEntityLayer;
+import data.ExplosionGroup;
+import sprites.*;
+import sprites.pods.*;
+import states.OgmoState;
 
 class GameState extends OgmoState
 {
@@ -27,6 +24,7 @@ class GameState extends OgmoState
     var enemies:FlxTypedGroup<Enemy>;
     var cockpits:FlxTypedGroup<Cockpit>;
     var badBullets:FlxTypedGroup<FlxTypedGroup<Bullet>>;
+    var explosions:ExplosionGroup;
     
     var hero:Hero;
     var geom:FlxTilemap;
@@ -41,15 +39,16 @@ class GameState extends OgmoState
         
         parseLevel("assets/data/Level.json");
         
-        add(freePods = new FlxTypedGroup());
-        
         geom = getByName("Geom");
         entities = getByName("Entities");
         hero = entities.getByName("hero");
         
+        add(freePods = new FlxTypedGroup());
+        
         podGroups = new FlxTypedGroup();
         enemies = new FlxTypedGroup();
         cockpits = new FlxTypedGroup();
+        add(explosions = new ExplosionGroup());
         add(badBullets = new FlxTypedGroup());
         add(hero.bullets);
         for (member in entities.members)
@@ -99,7 +98,7 @@ class GameState extends OgmoState
         for (group in podGroups)
         {
             if (group.alive)
-                group.checkHealthAndFling(freePods);
+                group.checkHealthAndFling(freePods, explosions);
         }
     }
     
@@ -156,8 +155,8 @@ class GameState extends OgmoState
                     {
                         pod1.hit(1);
                         pod2.hit(1);
-                        pod1.group.bounce(true);
-                        pod2.group.bounce(true);
+                        pod1.group.bounce();
+                        pod2.group.bounce();
                     }
                 }
             }
@@ -179,8 +178,8 @@ class GameState extends OgmoState
             {
                 if (pod.checkOverlapBullet(bullet))
                 {
-                    bullet.kill();
-                    pod.hit(bullet.damage);
+                    pod.group.onShot(bullet, pod);
+                    bullet.onHit(pod);
                 }
             }
         );

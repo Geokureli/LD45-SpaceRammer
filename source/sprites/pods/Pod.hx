@@ -1,33 +1,52 @@
-package sprites;
+package sprites.pods;
 
+import flixel.group.FlxGroup;
 import flixel.FlxG;
 import flixel.math.FlxVector;
+
+import sprites.*;
+import data.ExplosionGroup;
 
 @:allow(sprites.PodGroup)
 class Pod extends SkidSprite
 {
-    static inline public var RADIUS = 9;
-    static inline public var RADIUS_SQUARED = RADIUS * RADIUS;
-    static inline var MIN_FLING = 200;
-    static inline var MAX_FLING = 400;
-    static inline var FLING_TIME = 0.5;
-    static inline var HIT_COLOR = 0xFFd95763;
-    static inline var HIT_PERIOD = 0.08;
-    static inline var HIT_CHEESE_PERIOD = 0.5;
+    inline static var SCALE = 1.5;
+    inline static public var RADIUS = 9 * SCALE;
+    inline static public var RADIUS_SQUARED = RADIUS * RADIUS;
+    inline static var BULLET_SCATTER = 2;
+    inline static var MIN_SPIN = 90;
+    inline static var MAX_SPIN = 720;
+    inline static var MIN_FLING = 50;
+    inline static var MAX_FLING = 200;
+    inline static var FLING_SPEED = 400;
+    inline static var HIT_COLOR = 0xFFd95763;
+    inline static var HIT_PERIOD = 0.08;
+    inline static var HIT_CHEESE_PERIOD = 0.5;
+    inline static public var FLING_STAGGER = 0.1;
     
     static var _v1 = FlxVector.get();
     
-    public var type:PodType;
-    public var parentPod:Null<Pod>;
-    public var childPods:Array<Pod> = [];
-    public var linkDis = FlxVector.get();
-    public var linkAngle = 0.0;
-    public var group:PodGroup;
+    public var type     (default, null):PodType;
+    public var group    (default, null):Null<PodGroup>;
+    public var parentPod(default, null):Null<Pod>;
+    public var childPods(default, null):Array<Pod> = [];
+    public var linkDis  (default, null) = FlxVector.get();
+    public var linkAngle(default, null) = 0.0;
+    public var maxHealth(default, null) = 0;
     
+    public var dieTimer(default, null) = 0.0;
+    
+    public var timesFlung(default, null) = 0;
+    public var flingTimer(default, null) = 0.0;
+    public var flingChance(get, never):Float;
+    function get_flingChance():Float return timesFlung == 0 ? 1 : 0.5;
     public var free(get, never):Bool;
     inline function get_free():Bool return group == null;
     
-    public var tutorialInvincible = false;
+    public var exploding(get, never):Bool;
+    inline function get_exploding():Bool return flingTimer > 0 || dieTimer > 0;
+    var explosion:Null<Explosion>;
+    
     var hitTimer = 0.0;
     public var canHurt(get, never):Bool;
     inline function get_canHurt():Bool return hitTimer == 0;
@@ -46,26 +65,30 @@ class Pod extends SkidSprite
     public function new (type:PodType, x = 0.0, y = 0.0, angle = 0.0)
     {
         super();
-        init(type, x, y);
+        init(type, x, y, angle);
         
+        scale.set(SCALE, SCALE);
         width = RADIUS * 2;
         height = RADIUS * 2;
     }
     
-    public function init(type:PodType, x = 0.0, y = 0.0, angle = -90.0):Void
+    public function init(type:PodType, x = 0.0, y = 0.0, angle = 0.0):Void
     {
         this.x = x;
         this.y = y;
         this.type = type;
         this.angle = angle;
+        angularVelocity = 0;
         drag.set();
         parentPod = null;
         childPods.resize(0);
         linkDis.set();
         linkAngle = 0;
         hitTimer = 0;
+        flingTimer = 0.0;
+        timesFlung = 0;
         
-        health = Pod.getInitialHealth(type);
+        health = maxHealth = Pod.getInitialHealth(type);
         loadGraphic(Pod.getGraphic(type));
         offset.x = -(RADIUS * 2 - graphic.bitmap.width) / 2;
         offset.y = -(RADIUS * 2 - graphic.bitmap.height) / 2;
@@ -82,6 +105,26 @@ class Pod extends SkidSprite
             if (hitTimer < 0)
                 hitTimer = 0;
         }
+        
+        if (flingTimer > 0)
+        {
+            flingTimer -= elapsed;
+            if (flingTimer <= 0)
+            {
+                fling();
+                flingTimer = 0;
+            }
+        }
+        
+        if (dieTimer > 0)
+        {
+            dieTimer -= elapsed;
+            if (dieTimer <= 0)
+            {
+                dieNow();
+                dieTimer = 0;
+            }
+        }
     }
     
     function orientChildren():Void
@@ -96,17 +139,20 @@ class Pod extends SkidSprite
         }
     }
     
-    public function fire():Null<Bullet>
+    public function fire(parent:FlxTypedGroup<Bullet>):Null<Bullet>
     {
         if (!type.match(Rocket|Laser))
             return null;
         
-        var bullet = new Bullet(x, y);
+        var bullet = parent.recycle(Bullet);
+        bullet.init(x, y);
         (bullet.velocity:FlxVector)
             .set(bullet.speed, 0)
             .scale(group.bulletSpeedScale)
-            .rotateByDegrees(angle)
-            .addPoint(group.cockpit.velocity);
+            .rotateByDegrees(angle + FlxG.random.floatNormal(0, BULLET_SCATTER));
+        
+        bullet.velocity.addPoint(group.cockpit.velocity);
+        
         return bullet;
     }
     
@@ -120,6 +166,7 @@ class Pod extends SkidSprite
         
         this.group = group;
         velocity.set();
+        angularVelocity = 0;
         parentPod = parent;
         parent.childPods.push(this);
         linkAngle = angle - parent.angle;
@@ -127,32 +174,60 @@ class Pod extends SkidSprite
         linkDis.rotateByDegrees(-parent.angle);
     }
     
-    public function setFree():Void
+    public function setFree(explosions:ExplosionGroup, delay = 0.0):Void
     {
-        final flingSpeed = FlxG.random.float(MIN_FLING, MAX_FLING);
+        explosion = explosions.create(RADIUS);
+        explosion.visible = false;
+        if (delay <= 0)
+            fling();
+        else
+        {
+            flingTimer = delay;
+            solid = false;
+        }
+    }
+    
+    function fling():Void
+    {
+        explosion.visible = true;
+        explosion.start((x + parentPod.x) / 2, (y + parentPod.y) / 2);
+        final fling = FlxG.random.float(MIN_FLING, MAX_FLING);
         (velocity.copyFrom(linkDis):FlxVector)
             .rotateByDegrees(parentPod.angle)
             .normalize()
-            .scale(flingSpeed);
+            .scale(FLING_SPEED);
         
-        drag.set(1, 1).scale(flingSpeed / FLING_TIME);
+        angularVelocity = FlxG.random.float(MIN_SPIN, MAX_SPIN);
+        drag.set(1, 1).scale(FLING_SPEED * FLING_SPEED / 2 / fling);
         solid = true;
         color = defaultColor;
+        linkDis.normalize().scale(200);
+        group.bump(linkDis.x, linkDis.y);
         group = null;
         hitTimer = 0;
         parentPod.childPods.remove(this);
         parentPod = null;
-        tutorialInvincible = false;
+        health = maxHealth;
     }
     
-    public function killAndFreeChildren():Array<Pod>
+    public function die(explosions:ExplosionGroup, delay = 0.0):Void
     {
-        var children = freeChildren();
-        kill();
-        return children;
+        explosion = explosions.create(RADIUS * 2);
+        explosion.visible = false;
+        if (delay <= 0)
+            dieNow();
+        else
+            dieTimer = delay;
     }
     
-    function freeChildren(list:Array<Pod> = null):Array<Pod>
+    function dieNow()
+    {
+        explosion.visible = true;
+        explosion.start(x, y);
+        kill();
+    }
+    
+    public function freeChildren(explosions:ExplosionGroup, startDelay = 0.0, list:Array<Pod> = null):Array<Pod>
     {
         if (list == null)
             list = [];
@@ -160,10 +235,14 @@ class Pod extends SkidSprite
         var i = childPods.length;
         while(i-- > 0)
         {
-            var pod = childPods.pop();
-            list.push(pod);
-            pod.freeChildren(list);
-            pod.setFree();
+            var pod = childPods[i];
+            if (pod != null && pod.alive)
+            {
+                list.push(pod);
+                var delay = startDelay + FLING_STAGGER * list.length;
+                pod.freeChildren(explosions, startDelay, list);
+                pod.setFree(explosions, delay);
+            }
         }
         
         return list;
@@ -174,9 +253,7 @@ class Pod extends SkidSprite
         if (hitTimer > 0)
             return;
         
-        if (!tutorialInvincible)
-            health -= damage;
-        
+        health -= damage;
         hitTimer = 0.5;
     }
     

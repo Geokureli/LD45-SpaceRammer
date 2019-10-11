@@ -1,4 +1,4 @@
-package sprites;
+package sprites.pods;
 
 import flixel.math.FlxVector;
 
@@ -7,6 +7,8 @@ class Cockpit extends Pod
 {
     inline static var ACCEL_TIME = 0.25;
     inline static var DECEL_TIME = 0.50;
+    
+    override function get_flingChance():Float return 0;
     
     public var maxSpeed(default, set):Float = 0;
     function set_maxSpeed(value:Float)
@@ -34,8 +36,10 @@ class Cockpit extends Pod
         if (!look.isZero())
         {
             var lookAngle = look.degrees;
+            if (angle >  180) angle -= 360;
+            if (angle < -180) angle += 360;
             if (lookAngle - angle >  180) lookAngle -= 360;
-            if (angle - lookAngle < -180) lookAngle += 360;
+            if (lookAngle - angle < -180) lookAngle += 360;
             var speed = turnSpeed * elapsed;
             
             if (Math.abs(lookAngle - angle) < speed)

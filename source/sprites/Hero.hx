@@ -1,6 +1,7 @@
 package sprites;
 
 import ui.Inputs;
+import sprites.pods.*;
 
 import flixel.FlxCamera;
 import flixel.FlxG;
@@ -13,19 +14,22 @@ class Hero extends PodGroup
     {
         super(x, y);
         cockpit.health = 10;
-        cockpit.turnSpeed = 180;
+        cockpit.maxSpeed = 300;
+        cockpit.turnSpeed = 360;
         cockpit.defaultColor = 0xFF5fcde4;
-        fireRate = 0.5;
+        fireRate = 0.15;
         
         FlxG.camera.follow(cockpit, FlxCameraFollowStyle.TOPDOWN);
         
-        linkPod(new Pod(Thruster, x, y + Pod.RADIUS * 2));
-        linkPod(new Pod(Poker   , x, y - Pod.RADIUS * 2));
+        linkPod(new Pod(Thruster, x - Pod.RADIUS * 2, y));
+        linkPod(new Pod(Poker   , x + Pod.RADIUS * 2, y));
+        linkPod(new Pod(Laser   , x, y + Pod.RADIUS * 1.5));
+        linkPod(new Pod(Laser   , x, y - Pod.RADIUS * 1.5));
     }
     
-    override function update(elapsed:Float)
+    override function updateControls(elapsed:Float)
     {
-        super.update(elapsed);
+        super.updateControls(elapsed);
         
         var thrust = FlxVector.get();
         var focus = FlxVector.get();

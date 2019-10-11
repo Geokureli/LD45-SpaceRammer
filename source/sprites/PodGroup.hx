@@ -1,13 +1,17 @@
 package sprites;
 
-import states.OgmoState;
+import flixel.FlxG;
 import flixel.math.FlxVector;
 import flixel.group.FlxGroup;
+
+import states.OgmoState;
+import sprites.pods.*;
 
 class PodGroup
 extends FlxTypedGroup<Pod>
 implements IOgmoEntity
 {
+    public var BOUNCE_TIME = 0.5;
     var fireRate = 1.0;
     public var bulletSpeedScale(default, null) = 1.0;
     
@@ -18,7 +22,7 @@ implements IOgmoEntity
     public var cockpit(default, null):Cockpit;
     public var bullets(default, null):FlxTypedGroup<Bullet> = new FlxTypedGroup();
     
-    var hitTimer = 0.0;
+    var stunTime = 0.0;
     
     var fireCooldown = 0.0;
     
@@ -48,24 +52,41 @@ implements IOgmoEntity
     
     override function update(elapsed:Float)
     {
+        cockpit.orientChildren();
+        
         super.update(elapsed);
         
-        cockpit.orientChildren();
+        if (cockpit.health <= 0)
+        {
+            if (!cockpit.alive)
+                kill();
+            return;
+        }
+        
+        if (stunTime == 0)
+            updateControls(elapsed);
         
         var firing = fireCooldown == 0 && cockpit.firing;
         if (firing)
         {
+            var fireForce = FlxVector.get();
             fireCooldown += fireRate;
             
             for (pod in members)
             {
                 if (pod != null && pod.alive)
                 {
-                    var bullet = pod.fire();
+                    var bullet = pod.fire(bullets);
                     if (bullet != null)
-                        bullets.add(bullet);
+                    {
+                        fireForce.add
+                            ( bullet.velocity.x * -bullet.fireForce / bullet.speed
+                            , bullet.velocity.y * -bullet.fireForce / bullet.speed
+                            );
+                    }
                 }
             }
+            bump(fireForce.x, fireForce.y);
         }
         else if (fireCooldown > 0)
         {
@@ -74,57 +95,79 @@ implements IOgmoEntity
                 fireCooldown = 0;
         }
         
-        if (hitTimer > 0)
+        if (stunTime > 0)
         {
-            hitTimer -= elapsed;
-            if (hitTimer < 0)
-            {
-                hitTimer = 0;
-                setSolid(true);
-            }
+            stunTime -= elapsed;
+            if (stunTime < 0)
+                stunTime = 0;
         }
     }
     
-    public function checkHealthAndFling(parent:FlxTypedGroup<Pod>):Void
+    function updateControls(elapsed:Float):Void { }
+    
+    public function checkHealthAndFling(parent:FlxTypedGroup<Pod>, explosions:FlxTypedGroup<Explosion>):Void
     {
-        var dead = cockpit.health <= 0;
-        
         var i = 0;
         while(i < members.length)
         {
             var pod = members[i];
-            if (pod != null && pod.alive && pod.health <= 0)
+            if (pod != null && pod.alive && pod.health <= 0 && !pod.exploding)
             {
-                final freedPods = pod.killAndFreeChildren();
+                var delay = .25;
+                final freedPods = pod.freeChildren(explosions, delay);
+                delay += (freedPods.length + 1) * Pod.FLING_STAGGER;
+                if (FlxG.random.bool(pod.flingChance * 100))
+                {
+                    freedPods.push(pod);
+                    pod.setFree(explosions, delay);
+                }
+                else
+                    pod.die(explosions, delay);
+                
                 while (freedPods.length > 0)
                     parent.add(remove(freedPods.pop()));
             }
             i++;
         }
-        
-        if (dead)
-            kill();
     }
     
-    public function bounce(setInvincible = false):Void
+    public function bump(x:Float, y:Float, stunTime = 0.0):Void
+    {
+        cockpit.velocity.add(x, y);
+        
+        if (stunTime > 0)
+            stun(stunTime);
+    }
+    
+    public function bounce():Void
     {
         cockpit.velocity.scale(-1);
-        if (setInvincible)
-            startInvinciblePeriod();
+        
+        if (stunTime > 0)
+            stun(0.5);
     }
     
-    public function startInvinciblePeriod():Void
+    inline function stun(time:Float):Void
     {
-        setSolid(false);
+        cockpit.acceleration.set();
         
-        hitTimer = 0.5;
+        stunTime = time;
     }
     
     public function onPoked(attacker:PodGroup, victim:Pod):Void
     {
         victim.hit(2);
         cockpit.velocity.copyFrom(attacker.cockpit.velocity).scale(2);
-        attacker.cockpit.velocity.set();
+        attacker.bounce();
+    }
+    
+    public function onShot(bullet:Bullet, victim:Pod):Void
+    {
+        victim.hit(bullet.damage);
+        bump
+            ( bullet.velocity.x * bullet.impactForce / bullet.speed
+            , bullet.velocity.y * bullet.impactForce / bullet.speed
+            );
     }
     
     function setSolid(value:Bool):Bool
