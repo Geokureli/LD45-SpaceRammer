@@ -17,14 +17,14 @@ class Hero extends PodGroup
         cockpit.maxSpeed = 300;
         cockpit.turnSpeed = 360;
         cockpit.defaultColor = 0xFF5fcde4;
-        fireRate = 0.15;
+        fireRate = 0.25;
         
         FlxG.camera.follow(cockpit, FlxCameraFollowStyle.TOPDOWN);
         
         linkPod(new Pod(Thruster, x - Pod.RADIUS * 2, y));
         linkPod(new Pod(Poker   , x + Pod.RADIUS * 2, y));
-        linkPod(new Pod(Laser   , x, y + Pod.RADIUS * 1.5));
-        linkPod(new Pod(Laser   , x, y - Pod.RADIUS * 1.5));
+        linkPod(new Pod(Laser   , x + Pod.RADIUS * 2, y + Pod.RADIUS * 2));
+        linkPod(new Pod(Laser   , x                 , y - Pod.RADIUS * 2));
     }
     
     override function updateControls(elapsed:Float)

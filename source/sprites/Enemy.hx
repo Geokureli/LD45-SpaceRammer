@@ -14,7 +14,7 @@ class Enemy extends PodGroup
     {
         super(x, y);
         cockpit.defaultColor = 0xFFfbf236;
-        fireRate = 1;
+        fireRate = 0.25;
     }
     
     override function ogmoInit(data:OgmoEntityData, parent:OgmoEntityLayer):Void
@@ -33,13 +33,19 @@ class Enemy extends PodGroup
         {
             case 0:
                 cockpit.defaultColor = 0xFF847e87;
-                linkPod(new Pod(Thruster, x - rad2, y));
-                linkPod(new Pod(Laser   , x + rad2, y));
+                var pod = linkPod(new Pod(Thruster, x - rad2, y));
+                // pod = linkPod(new Pod(Thruster, x - rad2 * 2, y), pod);
+                // linkPod(new Pod(Thruster, x - rad2 * 3, y), pod);
+                pod = linkPod(new Pod(Laser   , x + rad2, y));
+                // linkPod(new Pod(Laser   , x + rad2 * 2, y), pod);
             case 1:
-                var pod = linkPod(new Pod(Laser, x + rad2, y));
-                linkPod(new Pod(Laser   , x + rad2, y - rad2, -45), pod);
-                linkPod(new Pod(Laser   , x + rad2, y + rad2,  45), pod);
+                var x = this.x;
                 linkPod(new Pod(Thruster, x - rad2, y));
+                x += rad2;
+                var pod = linkPod(new Pod(Laser, x, y));
+                x += pod.radius;
+                linkPod(new Pod(Laser   , x, y - rad2), pod);
+                linkPod(new Pod(Laser   , x, y + rad2), pod);
         }
         
         cockpit.angle = data.rotation;
@@ -65,6 +71,6 @@ class Enemy extends PodGroup
         
         focus.copyFrom(distance);
         
-        cockpit.updateInput(elapsed, thrust, focus, length < 200);
+        cockpit.updateInput(elapsed, thrust, focus, length < 350);
     }
 }

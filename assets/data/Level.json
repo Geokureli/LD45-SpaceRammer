@@ -18763,7 +18763,7 @@
             "id": "",
             "maxSpeed": "200",
             "turnSpeed": "90",
-            "fireRate": "3"
+            "fireRate": "0.25"
           }
         },
         {

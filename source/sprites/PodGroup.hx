@@ -46,15 +46,18 @@ implements IOgmoEntity
         if (members.indexOf(pod) != -1)
             return pod;
         
-        pod.setLinked(this, parent);
+        if (parent == null)
+            parent = cockpit;
+        
+        pod.setLinked(parent);
         return add(pod);
     }
     
     override function update(elapsed:Float)
     {
-        cockpit.orientChildren();
-        
         super.update(elapsed);
+        
+        cockpit.orientChildren(elapsed);
         
         if (cockpit.health <= 0)
         {
@@ -107,27 +110,18 @@ implements IOgmoEntity
     
     public function checkHealthAndFling(parent:FlxTypedGroup<Pod>, explosions:FlxTypedGroup<Explosion>):Void
     {
-        var i = 0;
-        while(i < members.length)
+        final freedPods = cockpit.checkHealthAndFling(explosions);
+        if (freedPods != null)
         {
-            var pod = members[i];
-            if (pod != null && pod.alive && pod.health <= 0 && !pod.exploding)
+            while (freedPods.length > 0)
             {
-                var delay = .25;
-                final freedPods = pod.freeChildren(explosions, delay);
-                delay += (freedPods.length + 1) * Pod.FLING_STAGGER;
-                if (FlxG.random.bool(pod.flingChance * 100))
-                {
-                    freedPods.push(pod);
-                    pod.setFree(explosions, delay);
-                }
-                else
-                    pod.die(explosions, delay);
+                var pod = freedPods.pop();
+                if (members.indexOf(pod) == -1)
+                    throw "null wtf!";
                 
-                while (freedPods.length > 0)
-                    parent.add(remove(freedPods.pop()));
+                remove(pod);
+                parent.add(pod);
             }
-            i++;
         }
     }
     
@@ -157,27 +151,17 @@ implements IOgmoEntity
     public function onPoked(attacker:PodGroup, victim:Pod):Void
     {
         victim.hit(2);
-        cockpit.velocity.copyFrom(attacker.cockpit.velocity).scale(2);
-        attacker.bounce();
+        // cockpit.velocity.copyFrom(attacker.cockpit.velocity).scale(2);
+        // attacker.bounce();
     }
     
     public function onShot(bullet:Bullet, victim:Pod):Void
     {
         victim.hit(bullet.damage);
-        bump
-            ( bullet.velocity.x * bullet.impactForce / bullet.speed
-            , bullet.velocity.y * bullet.impactForce / bullet.speed
-            );
-    }
-    
-    function setSolid(value:Bool):Bool
-    {
-        for (pod in members)
-        {
-            if (pod != null)
-                pod.solid = value;
-        }
-        return value;
+        // bump
+        //     ( bullet.velocity.x * bullet.impactForce / bullet.speed
+        //     , bullet.velocity.y * bullet.impactForce / bullet.speed
+        //     );
     }
     
     inline function get_x():Float { return cockpit.x; }

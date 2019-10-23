@@ -100,7 +100,7 @@
         {
           "name": "fireRate",
           "definition": "Float",
-          "defaults": 3,
+          "defaults": 0.25,
           "bounded": true,
           "min": 0.1,
           "max": 100

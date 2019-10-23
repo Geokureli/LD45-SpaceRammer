@@ -1,5 +1,6 @@
 package states;
 
+import flixel.math.FlxVector;
 import flixel.FlxCamera;
 import flixel.FlxG;
 import flixel.FlxObject;
@@ -49,8 +50,8 @@ class GameState extends OgmoState
         enemies = new FlxTypedGroup();
         cockpits = new FlxTypedGroup();
         add(explosions = new ExplosionGroup());
-        add(badBullets = new FlxTypedGroup());
         add(hero.bullets);
+        add(badBullets = new FlxTypedGroup());
         for (member in entities.members)
         {
             if (Std.is(member, PodGroup))
@@ -65,6 +66,15 @@ class GameState extends OgmoState
                 }
             }
         }
+        
+        #if debug
+            // if (Circle.debugDrawer == null)
+            // {
+            //     var shape = new openfl.display.Shape();
+            //     FlxG.game.parent.addChild(shape);
+            //     Circle.debugDrawerShape = shape;
+            // }
+        #end
     }
     
     function drawStars(avgSpacing = 100):FlxTypedGroup<FlxSprite>
@@ -115,72 +125,87 @@ class GameState extends OgmoState
     
     function handleCollisions(elapsed:Float):Void
     {
+        #if debug
+        if (Circle.debugDrawer != null)
+        {
+            Circle.debugDrawerShape.x = -FlxG.camera.scroll.x;
+            Circle.debugDrawer.clear();
+        }
+        #end
+        
         FlxG.collide(cockpits, geom);
         
         FlxG.collide(freePods, geom);
         
-        FlxG.collide(podGroups, geom, 
+        var p = FlxVector.get();
+        var v = FlxVector.get();
+        FlxG.overlap(podGroups, geom,
             function (pod:Pod, _)
             {
-                pod.hit();
-                pod.group.bounce();
+                pod.hit(1);
+                pod.group.cockpit.x + pod.x - p.x;
+                pod.group.cockpit.y + pod.y - p.y;
+                pod.group.bump(pod.velocity.x - v.x, pod.velocity.y - v.y);
+                // if(pod.isTouching(FlxObject.UP   )) pod.group.bump( 0  ,  400);
+                // if(pod.isTouching(FlxObject.DOWN )) pod.group.bump( 0  , -400);
+                // if(pod.isTouching(FlxObject.LEFT )) pod.group.bump( 400,  0  );
+                // if(pod.isTouching(FlxObject.RIGHT)) pod.group.bump(-400,  0  );
+            },
+            function (a:Pod, b):Bool
+            {
+                a.getPosition(p);
+                v.copyFrom(a.velocity);
+                return FlxObject.separate(a, b);
+            }
+        );
+        v.put();
+        
+        Pod.overlap(podGroups, freePods,
+            function (used:Pod, free:Pod):Void
+            {
+                freePods.remove(free);
+                used.group.linkPod(free, used);
+            },
+            function (used:Pod, free:Pod):Bool
+            {
+                return free.free && free.catchable;
+                    //&& Pod.separate(used, free);
             }
         );
         
-        FlxG.overlap(podGroups, freePods,
-            function onPodsCollide(used:Pod, free:Pod):Void
+        Pod.collide(podGroups, podGroups,
+            function (pod1:Pod, pod2:Pod):Void
             {
-                trace(free.free, used.checkOverlapPod(free));
-                if (free.free && used.checkOverlapPod(free))
+                if (pod1.type == Poker || pod2.type == Poker)
                 {
-                    freePods.remove(free);
-                    used.group.linkPod(free, used);
+                    if (pod1.type == Poker && pod2.type != Poker)
+                        pod2.group.onPoked(pod1.group, pod2);
+                    else if (pod2.type == Poker && pod1.type != Poker)
+                        pod1.group.onPoked(pod2.group, pod1);
+                }
+                else
+                {
+                    pod1.hit(1);
+                    pod2.hit(1);
                 }
             }
         );
         
-        FlxG.overlap(podGroups, podGroups,
-            function onPodsCollide(pod1:Pod, pod2:Pod):Void
-            {
-                if (pod1.group != pod2.group && pod1.checkOverlapPod(pod2))
-                {
-                    if (pod1.type == Poker || pod2.type == Poker)
-                    {
-                        if (pod1.type == Poker && pod2.type != Poker)
-                            pod2.group.onPoked(pod1.group, pod2);
-                        else if (pod2.type == Poker && pod1.type != Poker)
-                            pod1.group.onPoked(pod2.group, pod1);
-                    }
-                    else
-                    {
-                        pod1.hit(1);
-                        pod2.hit(1);
-                        pod1.group.bounce();
-                        pod2.group.bounce();
-                    }
-                }
-            }
-        );
-        
-        FlxG.overlap(hero, badBullets, 
+        Circle.collide(hero, badBullets, 
             function(pod:Pod, bullet:Bullet)
             {
-                if (pod.checkOverlapBullet(bullet))
-                {
-                    bullet.kill();
-                    pod.hit(bullet.damage);
-                }
+                bullet.kill();
+                pod.hit(bullet.damage);
+                explosions.create(22.5).start(bullet.x, bullet.y);
             }
         );
         
-        FlxG.overlap(enemies, hero.bullets,
+        Circle.collide(enemies, hero.bullets,
             function(pod:Pod, bullet:Bullet)
             {
-                if (pod.checkOverlapBullet(bullet))
-                {
-                    pod.group.onShot(bullet, pod);
-                    bullet.onHit(pod);
-                }
+                pod.group.onShot(bullet, pod);
+                bullet.onHit(pod);
+                explosions.create(22.5).start(bullet.x, bullet.y);
             }
         );
     }

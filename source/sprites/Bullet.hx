@@ -3,10 +3,9 @@ package sprites;
 import flixel.FlxSprite;
 import sprites.pods.Pod;
 
-class Bullet extends FlxSprite
+class Bullet extends Circle
 {
     inline static var SCALE = 3;
-    public var radius       (default, null) = 4.0 * SCALE;
     public var damage       (default, null) = 0;
     public var speed        (default, null) = 0.0;
     public var lifeTime     (default, null) = 0.0;
@@ -16,8 +15,7 @@ class Bullet extends FlxSprite
     
     public function new (x = 0.0, y = 0.0)
     {
-        super(x, y);
-        
+        super(4.0 * SCALE, x, y);
     }
     
     public function init(x = 0.0, y = 0.0):Void
@@ -25,13 +23,14 @@ class Bullet extends FlxSprite
         this.x = x;
         this.y = y;
         
+        // elasticity = 1;
         damage = 1;
         lifeTime = 1;
         lifeRemaining = lifeTime;
         speed = 550;
         fireForce = 50;
         impactForce = 100;
-        radius = 4.0 * SCALE;
+        setRadius(4.0 * SCALE);
         loadGraphic("assets/images/bullet.png", true);
         animation.add("idle", [0,1], 15);
         animation.play("idle");
