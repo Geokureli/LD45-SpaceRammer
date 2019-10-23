@@ -4,9 +4,9 @@ import flixel.math.FlxVector;
 import openfl.display.Sprite;
 import flixel.util.FlxColor;
 
-class Circle
+class DragCircle
 {
-    public var main(default, null):CircleSprite;
+    public var main(default, null):CircleShape;
     public var pos(default, null):Handle;
     public var size(default, null):Handle;
     
@@ -63,12 +63,12 @@ class Circle
         return main.visible = value;
     }
     
-    public var onChange:Circle->Void;
+    public var onChange:DragCircle->Void;
     
     public function new(parent:Sprite, x:Float, y:Float, radius:Float, color:FlxColor, editable = false)
     {
         this.editable = editable;
-        parent.addChild(main = new CircleSprite(x, y, radius, color));
+        parent.addChild(main = new CircleShape(x, y, radius, color));
         if (editable)
         {
             parent.addChild(pos = new Handle(x, y));
@@ -93,7 +93,7 @@ class Circle
     }
 }
 
-class CircleSprite extends openfl.display.Shape
+class CircleShape extends openfl.display.Shape
 {
     public var color(default, set):FlxColor;
     inline function set_color(value:FlxColor)

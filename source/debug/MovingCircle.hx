@@ -7,9 +7,9 @@ import flixel.math.FlxVector;
 
 class MovingCircle
 {
-    public var start(default, null):Circle;
+    public var start(default, null):DragCircle;
     public var line(default, null):Line;
-    public var vel(default, null):Circle;
+    public var vel(default, null):DragCircle;
     public var end(default, null):Handle;
     
     var velocity = FlxVector.get();
@@ -73,8 +73,8 @@ class MovingCircle
     
     public function new(parent:Sprite, x:Float, y:Float, vx:Float, vy:Float, radius:Float, color:FlxColor)
     {
-        vel   = new Circle(parent, x + vx * t, y + vy * t, radius, color.getLightened(0.5));
-        start = new Circle(parent, x, y, radius, color, true);
+        vel   = new DragCircle(parent, x + vx * t, y + vy * t, radius, color.getLightened(0.5));
+        start = new DragCircle(parent, x, y, radius, color, true);
         parent.addChild(end = new Handle(x + vx, y + vy));
         parent.addChild(line = new Line(x, y, x + vx, y + vy, color.getDarkened(0.5), 2));
         

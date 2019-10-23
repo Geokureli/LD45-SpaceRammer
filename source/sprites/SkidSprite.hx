@@ -6,7 +6,7 @@ import flixel.math.FlxMath;
 class SkidSprite extends flixel.FlxSprite {
 	
 	
-	function new (x = 0.0, y = 0.0) { super(x, y); }
+	function new (x = 0.0, y = 0.0, ?graphic) { super(x, y, graphic); }
 	
 	// --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 	// Hack to allow drag when acellerating opposite to velocity

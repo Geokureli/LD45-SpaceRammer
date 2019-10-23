@@ -5,7 +5,6 @@ import openfl.display.Sprite;
 import flixel.FlxG;
 import flixel.FlxGame;
 
-import states.*;
 import ui.Inputs;
 
 class Main extends Sprite
@@ -21,19 +20,23 @@ class Main extends Sprite
     
     function onAddedToStage(e = null) {
         
-        // final zoom = 1;
-        // addChild
-        // ( new FlxGame
-        //     ( Std.int(stage.stageWidth  / zoom)
-        //     , Std.int(stage.stageHeight / zoom)
-        //     , CollisionState
-        //     , Std.int(stage.frameRate)
-        //     , Std.int(stage.frameRate)
-        //     )
-        // );
+        #if run_collision_test
+        addChild(new debug.CollisionDiagram());
+        #else
+        final zoom = 1;
+        addChild
+        ( new FlxGame
+            ( Std.int(stage.stageWidth  / zoom)
+            , Std.int(stage.stageHeight / zoom)
+            , states.GameState
+            // , states.CircleTestState
+            , Std.int(stage.frameRate)
+            , Std.int(stage.frameRate)
+            )
+        );
         
-		// FlxG.plugins.add(new Inputs());
+		FlxG.plugins.add(new Inputs());
+        #end
         
-        addChild(new CollisionTest());
     }
 }

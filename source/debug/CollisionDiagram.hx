@@ -1,10 +1,9 @@
-package states;
+package debug;
 
 import openfl.text.TextFormat;
 import openfl.text.TextField;
 import openfl.events.KeyboardEvent;
 import openfl.events.Event;
-import debug.*;
 
 import flixel.math.FlxVector;
 import flixel.util.FlxColor;
@@ -13,7 +12,7 @@ import openfl.events.MouseEvent;
 import openfl.display.Shape;
 import openfl.display.Sprite;
 
-class CollisionTest extends Sprite
+class CollisionDiagram extends Sprite
 {
     var a:MovingCircle;
     var b:MovingCircle;
@@ -24,14 +23,14 @@ class CollisionTest extends Sprite
     var perp:Line;
     var impact:Line;
     
-    var relativeImpact:Circle;
+    var relativeImpact:DragCircle;
     // rebound
     var wall:Line;
     var wallNorm:Line;
     var aBounce:Line;
     var bBounce:Line;
-    var aEnd:Circle;
-    var bEnd:Circle;
+    var aEnd:DragCircle;
+    var bEnd:DragCircle;
     
     var extraWork:Sprite;
     
@@ -50,14 +49,14 @@ class CollisionTest extends Sprite
         extraWork.addChild(par = Line.zero(FlxColor.GREEN, 2));
         extraWork.addChild(perp = Line.zero(FlxColor.GREEN, 2));
         extraWork.addChild(impact = Line.zero(FlxColor.YELLOW, 2));
-        relativeImpact = new Circle(extraWork, 0, 0, a.radius, FlxColor.GREEN);
+        relativeImpact = new DragCircle(extraWork, 0, 0, a.radius, FlxColor.GREEN);
         //rebound
         addChild(wall = Line.zero(FlxColor.BLACK, 4));
         extraWork.addChild(wallNorm = Line.zero(FlxColor.BLACK, 2));
         addChild(aBounce = Line.zero(a.lineColor, a.thickness));
         addChild(bBounce = Line.zero(b.lineColor, a.thickness));
-        aEnd = new Circle(this, a.x, a.y, a.radius, a.color);
-        bEnd = new Circle(this, b.x, b.y, b.radius, b.color);
+        aEnd = new DragCircle(this, a.x, a.y, a.radius, a.color);
+        bEnd = new DragCircle(this, b.x, b.y, b.radius, b.color);
         setChildIndex(aEnd.main, getChildIndex(a.start.main));
         setChildIndex(bEnd.main, getChildIndex(b.start.main));
         
@@ -132,10 +131,10 @@ class CollisionTest extends Sprite
         aEnd.visible = false;
         bEnd.visible = false;
         var radSum = a.radius + b.radius;
-        if (_perp.lengthSquared < radSum * radSum && _par.dotProduct(_vDif) > 0)
+        if (_perp.lengthSquared < radSum * radSum)// && _par.dotProduct(_vDif) > 0)
         {
             var tLength = _par.length - Math.sqrt((radSum * radSum) - _perp.lengthSquared);
-            if (tLength * tLength < _vDif.lengthSquared && tLength / _vDif.length >= 0)
+            if (tLength * tLength < _vDif.lengthSquared)// && tLength >= 0)
             {
                 impact.setStart(b.x, b.y);
                 var parLength = _par.length;
@@ -148,20 +147,20 @@ class CollisionTest extends Sprite
                 
                 t = a.t = b.t = tLength / _vDif.length;
                 
-                var intersection = FlxVector.get(a.tx - b.tx, a.ty - b.ty)
-                    .scale(-a.radius / radSum)
-                    .add(a.tx, a.ty);
                 
-                var _wallNorm = FlxVector.get(a.tx - b.tx, a.ty - b.ty);
+                var _wallNorm = FlxVector.get(b.tx - a.tx, b.ty - a.ty);
                 var _wall = _wallNorm.leftNormal();
+                var intersection = FlxVector.get().copyFrom(_wallNorm)
+                    .scale(a.radius / radSum)
+                    .add(a.tx, a.ty);
                 wall.setStart(intersection.x + _wall.x, intersection.y + _wall.y);
                 wall.setEnd(intersection.x - _wall.x, intersection.y - _wall.y);
                 
                 wallNorm.setStart(a.tx, a.ty);
                 wallNorm.setEnd(b.tx, b.ty);
                 
-                var _aVel = FlxVector.get(a.vx, a.vy).scale(1 - t);
-                var _bVel = FlxVector.get(b.vx, b.vy).scale(1 - t);
+                var _aVel = FlxVector.get(a.vx, a.vy);
+                var _bVel = FlxVector.get(b.vx, b.vy);
                 var _aPerp = _aVel.projectTo(_wallNorm);
                 var _bPerp = _bVel.projectTo(_wallNorm);
                 var average = _aPerp.addNew(_bPerp).scale(0.5);
@@ -173,6 +172,8 @@ class CollisionTest extends Sprite
                 _bPerp.subtractPoint(average).scale(a.elasticity).addPoint(average);
                 _aVel.addPoint(_bPerp);
                 _bVel.addPoint(_aPerp);
+                _aVel.scale(1 - t);
+                _bVel.scale(1 - t);
                 
                 aBounce.setStart(a.tx, a.ty);
                 aBounce.setVel(_aVel.x, _aVel.y);
