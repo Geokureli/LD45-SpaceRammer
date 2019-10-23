@@ -30,6 +30,8 @@ class Main extends Sprite
             , Std.int(stage.stageHeight / zoom)
             , states.GameState
             // , states.CircleTestState
+            // , states.GroupCreatorState
+            // , states.ErrorReproState
             , Std.int(stage.frameRate)
             , Std.int(stage.frameRate)
             )
