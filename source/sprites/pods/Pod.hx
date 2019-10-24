@@ -1,8 +1,7 @@
 package sprites.pods;
 
 import flixel.FlxG;
-import flixel.FlxBasic
-;
+import flixel.FlxBasic;
 import flixel.group.FlxGroup;
 import flixel.math.FlxVector;
 
@@ -191,7 +190,7 @@ class Pod extends Circle
     
     public function fire(parent:FlxTypedGroup<Bullet>):Null<Bullet>
     {
-        if (!type.match(Rocket|Laser))
+        if (health <= 0 || !type.match(Rocket|Laser))
             return null;
         
         var bullet = parent.recycle(Bullet);
@@ -227,7 +226,7 @@ class Pod extends Circle
         visible = true;
     }
     
-    function setFree(explosions:ExplosionGroup, delay = 0.0):Void
+    function delayFling(explosions:ExplosionGroup, delay = 0.0):Void
     {
         if (exploding)
             throw "already free";
@@ -252,18 +251,41 @@ class Pod extends Circle
             .normalize()
             .scale(FLING_SPEED);
         
+        drag.set(1, 1).scale(sqr(FLING_SPEED) / 2 / fling);
         angularVelocity = FlxG.random.float(MIN_SPIN, MAX_SPIN);
-        drag.set(1, 1).scale(FLING_SPEED * FLING_SPEED / 2 / fling);
+        angularDrag = angularVelocity / FREE_LIFE_TIME;
+        bumpGroupAtLinkAngle(200);
+        setFree();
+    }
+    
+    public function setFree():Void
+    {
         color = defaultColor;
-        linkDis.normalize().scale(-200);
-        group.bump(linkDis.x, linkDis.y);
         group = null;
         hitTimer = 0;
+        alpha = 1;
+        alive = true;
         parentPod.childPods.remove(this);
         parentPod = null;
         health = maxHealth;
         catchable = false;
         dieTimer = FREE_LIFE_TIME;
+    }
+    
+    public function bumpGroupAtLinkAngle(power:Float):Void
+    {
+        var v = linkDis.clone().normalize().scale(-power);
+        v.rotateByDegrees(group.cockpit.angle);
+        group.bump(v.x, v.y);
+        v.put();
+    }
+    
+    function explode(explosions:ExplosionGroup):Void
+    {
+        explosions.create(radius * 2).start(x, y);
+        alpha = 0.5;
+        alive = false;
+        bumpGroupAtLinkAngle(200);
     }
     
     public function die(explosions:ExplosionGroup, delay = 0.0):Void
@@ -290,48 +312,6 @@ class Pod extends Circle
         kill();
     }
     
-    function checkHealthAndFling(explosions:ExplosionGroup, list:Array<Pod> = null):Array<Pod>
-    {
-        if (health <= 0)
-        {
-            if (!exploding)
-            {
-                var delay = 0.25;
-                if (list != null)
-                    delay += (list.length + 1) * Pod.FLING_STAGGER;
-                
-                list = freeChildren(explosions, delay, list);
-                delay = 0.25 + (list.length + 1) * Pod.FLING_STAGGER;
-                if (FlxG.random.bool(flingChance * 100))
-                {
-                    list.push(this);
-                    setFree(explosions, delay);
-                }
-                else
-                    die(explosions, delay);
-            }
-        }
-        else
-        {
-            var i = childPods.length;
-            while (i-- > 0)
-            {
-                var pod = childPods[i];
-                if (pod.alive)
-                {
-                    if (pod.free)
-                        throw "already free";
-                    else
-                        list = pod.checkHealthAndFling(explosions, list);
-                }
-                else
-                    throw "dead child";
-            }
-        }
-        
-        return list;
-    }
-    
     function freeChildren(explosions:ExplosionGroup, startDelay = 0.0, list:Array<Pod> = null):Array<Pod>
     {
         if (list == null)
@@ -341,12 +321,12 @@ class Pod extends Circle
         while(i-- > 0)
         {
             var pod = childPods[i];
-            if (pod != null && pod.alive && !pod.exploding)
+            if (pod != null && !pod.exploding)
             {
                 list.push(pod);
                 var delay = startDelay + FLING_STAGGER * list.length;
                 pod.freeChildren(explosions, startDelay, list);
-                pod.setFree(explosions, delay);
+                pod.delayFling(explosions, delay);
             }
         }
         
@@ -442,6 +422,9 @@ class Pod extends Circle
     {
         // avoid checks between pods in the same group
         return (a.group != b.group || a.group == null)
+            && a.alive && b.alive
             && Circle.separate(a, b);
     }
+    
+    inline static function sqr(num:Float) return num * num;
 }

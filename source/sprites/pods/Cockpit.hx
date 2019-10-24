@@ -1,5 +1,8 @@
 package sprites.pods;
 
+import data.ExplosionGroup;
+
+import flixel.FlxG;
 import flixel.math.FlxVector;
 
 @:allow(sprites.PodGroup)
@@ -52,5 +55,39 @@ class Cockpit extends Pod
                     angle += speed;
             }
         }
+    }
+    function checkHealthAndFling(explosions:ExplosionGroup, list:Array<Pod> = null):Array<Pod>
+    {
+        if (health <= 0)
+        {
+            if (!exploding)
+            {
+                var delay = 0.25;
+                if (list != null)
+                    delay += (list.length + 1) * Pod.FLING_STAGGER;
+                
+                list = freeChildren(explosions, delay, list);
+                delay = 0.25 + (list.length + 1) * Pod.FLING_STAGGER;
+                // if (FlxG.random.bool(flingChance * 100))
+                // {
+                //     list.push(this);
+                //     delaFling(explosions, delay);
+                // }
+                // else
+                    die(explosions, delay);
+            }
+        }
+        else
+        {
+            var i = group.members.length;
+            while (i-- > 0)
+            {
+                var pod = group.members[i];
+                if (pod.alive && pod.health <= 0 && pod.hitTimer == 0)
+                    pod.explode(explosions);
+            }
+        }
+        
+        return list;
     }
 }

@@ -151,17 +151,6 @@ implements IOgmoEntity
     public function onPoked(attacker:PodGroup, victim:Pod):Void
     {
         victim.hit(2);
-        // cockpit.velocity.copyFrom(attacker.cockpit.velocity).scale(2);
-        // attacker.bounce();
-    }
-    
-    public function onShot(bullet:Bullet, victim:Pod):Void
-    {
-        victim.hit(bullet.damage);
-        // bump
-        //     ( bullet.velocity.x * bullet.impactForce / bullet.speed
-        //     , bullet.velocity.y * bullet.impactForce / bullet.speed
-        //     );
     }
     
     inline function get_x():Float { return cockpit.x; }
