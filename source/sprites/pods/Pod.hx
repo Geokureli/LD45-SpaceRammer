@@ -11,7 +11,7 @@ import data.ExplosionGroup;
 @:allow(sprites.PodGroup)
 class Pod extends Circle
 {
-    inline static var SCALE = 1.5;
+    inline static public var SCALE = 1.5;
     inline static public var RADIUS = 9 * SCALE;
     inline static public var DIAMETER_SQUARED = RADIUS * RADIUS * 4;
     inline static var BULLET_SCATTER = 2;

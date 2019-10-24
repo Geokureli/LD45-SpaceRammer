@@ -28,9 +28,9 @@ class Main extends Sprite
         ( new FlxGame
             ( Std.int(stage.stageWidth  / zoom)
             , Std.int(stage.stageHeight / zoom)
-            , states.GameState
+            // , states.GameState
             // , states.CircleTestState
-            // , states.GroupCreatorState
+            , states.GroupCreatorState
             // , states.ErrorReproState
             , Std.int(stage.frameRate)
             , Std.int(stage.frameRate)

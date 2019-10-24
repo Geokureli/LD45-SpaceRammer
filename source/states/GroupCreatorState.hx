@@ -1,5 +1,6 @@
 package states;
 
+import flixel.math.FlxAngle;
 import flixel.math.FlxVector;
 import flixel.FlxG;
 import flixel.FlxSprite;
@@ -16,120 +17,201 @@ class GroupCreatorState extends flixel.FlxState
     inline static var GRID_Y = Pod.RADIUS * 2;
     inline static var OFFSET_Y = -Pod.RADIUS;
     
-    var buttons:Map<PodType, PodButton>;
-    var pods:FlxTypedGroup<Pod>;
-    var dragPod:Pod;
-    var cockpit:Pod;
+    var pods:FlxTypedGroup<UiPod>;
+    var placePod:UiPod;
+    var cockpit:UiPod;
     
     var columns = Math.ceil(FlxG.width / GRID_X / 2) * 2;// must be even so all offset indices are even
     var rows = Math.ceil(FlxG.height / GRID_Y);
-    var takenSpots:Array<Int>;
+    var takenSpots:Map<Int, UiPod>;
+    var activeTool:ToolType = Mouse;
     
     override function create()
     {
         super.create();
-        buttons = new Map();
         add(pods = new FlxTypedGroup());
         var pos = getNearestHexCoord(FlxG.width / 2, FlxG.height / 2);
-        pods.add(cockpit = new Pod(Cockpit, pos.x, pos.y, -90));
+        pods.add(cockpit = new UiPod(Cockpit, pos.x, pos.y, -90));
         pos.put();
-        final cockpitIndex = getNearestHexIndex(cockpit.x, cockpit.y);
-        takenSpots = [cockpitIndex];
+        takenSpots = [getNearestHexIndex(cockpit.x, cockpit.y) => cockpit];
         
-        for (i in 0...5)
+        for (i in 0...6)
         {
-            final type = PodType.createByIndex(i + 1);
-            final button = new PodButton(type, 10, 10, onButtonClick);
+            var type = i == 0 ? Mouse : PlacePod(PodType.createByIndex(i));
+            final button = new Button(type, 10, 10, onButtonClick);
             button.y += (10 + button.height) * i;
-            button.angle = cockpit.angle;
-            buttons[type] = button;
+            if (i > 0)
+                button.angle = cockpit.angle;
             add(button);
         }
     }
     
-    function onButtonClick(type:PodType):Void
+    function onButtonClick(type:ToolType):Void
     {
-        if (dragPod == null)
+        activeTool = type;
+        
+        switch(type)
         {
-            pods.add(dragPod = new Pod(type, -100));
-            dragPod.angle = cockpit.angle;
+            case PlacePod(type):
+                setPlacePod(type);
+            case Mouse:
+                killPlacePod();
+        }
+    }
+    
+    inline function killPlacePod():Void
+    {
+        if (placePod != null)
+        {
+            pods.remove(placePod);
+            placePod.kill();
+            placePod = null;
+        }
+    }
+    
+    function setPlacePod(type:PodType, forceNew = false)
+    {
+        if (forceNew)
+            killPlacePod();
+        
+        if (placePod == null)
+        {
+            pods.add(placePod = new UiPod(type, -100));
+            placePod.angle = cockpit.angle;
         }
         else
-            dragPod.init(type);
+        {
+            placePod.exists = true;
+            placePod.init(type);
+        }
     }
     
     override function update(elapsed:Float)
     {
         super.update(elapsed);
         
-        if (dragPod != null)
-            updateDragPod(elapsed);
+        switch (activeTool)
+        {
+            case Mouse      : updateMouse(elapsed);
+            case PlacePod(_): updatePlacePod(elapsed);
+        }
     }
     
-    function updateDragPod(elapsed:Float)
+    function updateMouse(elapsed:Float)
     {
-        if (dragPod.free)
+        if (placePod == null)
         {
-            var tileIndex = getNearestHexIndex(dragPod.x, dragPod.y);
-            if (FlxG.mouse.justMoved)
-            {
-                var gridMouse = getNearestHexCoord(FlxG.mouse.x - dragPod.radius, FlxG.mouse.y - dragPod.radius);
-                // check if moved tiles, update color to convey valid placement
-                if (dragPod.x != gridMouse.x || dragPod.y != gridMouse.y)
-                {
-                    tileIndex = getNearestHexIndex(gridMouse.x, gridMouse.y);
-                    dragPod.alpha = 0.5;
-                    if (takenSpots.indexOf(tileIndex) == -1 && getTouchingPod(tileIndex, cockpit) != null)
-                        dragPod.alpha = 1;
-                    
-                    dragPod.x = gridMouse.x;
-                    dragPod.y = gridMouse.y;
-                }
-                
-                gridMouse.put();
-            }
-            
             if (FlxG.mouse.justPressed)
             {
-                if (takenSpots.indexOf(tileIndex) == -1)
+                var mouseIndex = getNearestHexIndex(FlxG.mouse.x - Pod.RADIUS, FlxG.mouse.y - Pod.RADIUS);
+                if (takenSpots.exists(mouseIndex) && takenSpots[mouseIndex] != cockpit)
                 {
-                    var parent = getTouchingPod(tileIndex, cockpit);
-                    if (parent != null)
-                    {
-                        dragPod.setLinked(parent);
-                        takenSpots.push(tileIndex);
-                    }
+                    placePod = takenSpots[mouseIndex];
+                    placePod.setFree();
+                    takenSpots.remove(mouseIndex);
                 }
             }
         }
         else
+            updateMouseMovePod(elapsed);
+    }
+    
+    /** Update handler for ToolType.Mouse when a pod is clicked and dragged */
+    function updateMouseMovePod(elapsed:Float)
+    {
+        if (!FlxG.mouse.pressed)
+        {
+            var attached = attachPod(placePod);
+            if (!attached)
+                killPlacePod();
+            else
+                placePod = null;
+        }
+        else if (FlxG.mouse.justMoved)
+            movePodToMouse(placePod);
+    }
+    
+    /** Update handler for ToolType.PlacePod */
+    function updatePlacePod(elapsed:Float)
+    {
+        if (placePod.free)
+        {
+            if (FlxG.mouse.justMoved)
+                movePodToMouse(placePod);
+            
+            if (FlxG.mouse.justPressed)
+                attachPod(placePod);
+        }
+        
+        //separate if/else in case justPressed and justReleased are handled in the same frame
+        if (!placePod.free)
         {
             if (FlxG.mouse.justReleased)
             {
-                var type = dragPod.type;
-                dragPod = null;
-                onButtonClick(type);
+                var type = placePod.type;
+                placePod = null;
+                setPlacePod(type);
             }
-            else if (FlxG.mouse.pressed && FlxG.mouse.justMoved)
-            {
-                var mouse = FlxVector.get(FlxG.mouse.x, FlxG.mouse.y);
-                if (FlxG.keys.pressed.SHIFT)
-                    mouse = roundToNearestHexCoord(mouse);
-                
-                var v = FlxVector.get(mouse.x - dragPod.x, mouse.y - dragPod.y);
-                if (!v.isZero())
-                    dragPod.angle = v.degrees + cockpit.angle;
-                v.put();
-            }
+            else if (FlxG.mouse.pressed && FlxG.mouse.justMoved && !FlxG.mouse.justPressed)
+                rotatePodToMouse(placePod);
         }
     }
     
-    function getTouchingPod(index:Int, pod:Pod):Pod
+    function movePodToMouse(pod:UiPod)
+    {
+        var gridMouse = getNearestHexCoord(FlxG.mouse.x - pod.radius, FlxG.mouse.y - pod.radius);
+        // check if moved tiles, update color to convey valid placement
+        if (pod.x != gridMouse.x || pod.y != gridMouse.y)
+        {
+            var tileIndex = getNearestHexIndex(gridMouse.x, gridMouse.y);
+            pod.alpha = 0.5;
+            if (!takenSpots.exists(tileIndex) && getTouchingPod(tileIndex, cockpit) != null)
+                pod.alpha = 1;
+            
+            pod.x = gridMouse.x;
+            pod.y = gridMouse.y;
+        }
+        
+        gridMouse.put();
+    }
+    
+    function rotatePodToMouse(pod:UiPod)
+    {
+        var mouse = FlxVector.get(FlxG.mouse.x, FlxG.mouse.y);
+        if (FlxG.keys.pressed.SHIFT)
+            mouse = roundToNearestHexCoord(mouse);
+        
+        if (mouse.x != pod.x && mouse.y != pod.y)
+        {
+            var v = FlxVector.get(mouse.x - pod.x, mouse.y - pod.y);
+            pod.angle = v.degrees + cockpit.angle;
+            v.put();
+        }
+        mouse.put();
+    }
+    
+    function attachPod(pod:UiPod):Bool
+    {
+        var index = getNearestHexIndex(pod.x, pod.y);
+        if (!takenSpots.exists(index))
+        {
+            var parent = getTouchingPod(index, cockpit);
+            if (parent != null)
+            {
+                pod.setLinked(parent);
+                takenSpots[index] = pod;
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    function getTouchingPod(index:Int, pod:UiPod):UiPod
     {
         if (isAdjacent(getPodHexIndex(pod), index))
             return pod;
         
-        for (i in 0...pod.childPods.length)
+        for (i in pod.childPods.keys())
         {
             var child = getTouchingPod(index, pod.childPods[i]);
             if (child != null)
@@ -181,7 +263,7 @@ class GroupCreatorState extends flixel.FlxState
         return index;
     }
     
-    inline function getPodHexIndex(pod:Pod):Int
+    inline function getPodHexIndex(pod:UiPod):Int
     {
         return getNearestHexIndex(pod.x, pod.y);
     }
@@ -229,21 +311,80 @@ class GroupCreatorState extends flixel.FlxState
     }
 }
 
-class PodButton extends flixel.ui.FlxButton
+class Button extends flixel.ui.FlxButton
 {
-    public function new(type:PodType, x:Float, y:Float, onClick:PodType->Void)
+    public function new(type:ToolType, x:Float, y:Float, onClick:ToolType->Void)
     {
         super(x, y, ()->onClick(type));
-        loadGraphic(Pod.getGraphic(type));
+        switch(type)
+        {
+            case PlacePod(podType):
+                loadGraphic(Pod.getGraphic(podType));
+            case Mouse:
+                loadGraphic("assets/images/mouse.png");
+        }
+        scale.scale(1.5);
+        updateHitbox();
     }
 }
 
-@:forward
-abstract Socket(Circle) to Circle
+class UiPod extends Circle
 {
-    inline public  function new(x:Float, y:Float)
+    public var type     (default, null):PodType;
+    public var parentPod(default, null):Null<UiPod>;
+    public var childPods(default, null):Map<Int, UiPod> = new Map();
+    public var cockpit  (default, null):Null<UiPod>;
+    public var free(get, never):Bool;
+    inline function get_free():Bool return parentPod == null && type != Cockpit;
+    
+    public function new (type:PodType, x = 0.0, y = 0.0, angle = 0.0)
     {
-        this = new Circle(9 * 1.5, x, y, "assets/images/podSocket.png");
-        this.scale.scale(1.5);
+        super(Pod.RADIUS);
+        init(type, x, y, angle);
+        
+        scale.scale(Pod.SCALE);
+        updateHitbox();
+        
+        if (type == Cockpit)
+            cockpit = this;
     }
+    
+    public function init(type:PodType, x = 0.0, y = 0.0, angle = 0.0):Void
+    {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.angle = angle;
+        parentPod = null;
+        cockpit = null;
+        childPods.clear();
+        
+        loadGraphic(Pod.getGraphic(type));
+    }
+    
+    public function setFree():Void
+    {
+        if (parentPod != null)
+        {
+            // var index = parentPod.childPods.c(this);
+            // parentPod.childPods[index] = null;
+        }
+        parentPod = null;
+        cockpit = null;
+    }
+    
+    public function setLinked(parent:UiPod):Void
+    {
+        cockpit = parent.cockpit;
+        // 6 spots to connect, 12o'clock is 0, increasing clockwise
+        final index = Math.round((Math.atan2(y - parent.y, x - parent.x) * FlxAngle.TO_DEG - cockpit.angle) / 60) + 1;
+        parent.childPods[index] = this;
+        parentPod = parent;
+    }
+}
+
+enum ToolType
+{
+    PlacePod(type:PodType);
+    Mouse;
 }
