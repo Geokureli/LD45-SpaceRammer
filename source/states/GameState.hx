@@ -191,22 +191,29 @@ class GameState extends OgmoState
             }
         );
         
-        Circle.collide(hero, badBullets, 
-            function(pod:Pod, bullet:Bullet)
-            {
-                bullet.kill();
-                pod.hit(bullet.damage);
-                explosions.create(22.5).start(bullet.x, bullet.y);
-            }
-        );
+        function processPodBullet(pod:Pod, bullet:Bullet):Bool
+        {
+            return pod.health > 0 && Circle.separate(pod, bullet);
+        }
         
-        Circle.collide(enemies, hero.bullets,
+        Circle.overlap(hero, badBullets, 
             function(pod:Pod, bullet:Bullet)
             {
-                pod.group.onShot(bullet, pod);
+                pod.hit(bullet.damage);
                 bullet.onHit(pod);
                 explosions.create(22.5).start(bullet.x, bullet.y);
-            }
+            },
+            processPodBullet
+        );
+        
+        Circle.overlap(enemies, hero.bullets,
+            function(pod:Pod, bullet:Bullet)
+            {
+                pod.hit(bullet.damage);
+                bullet.onHit(pod);
+                explosions.create(22.5).start(bullet.x, bullet.y);
+            },
+            processPodBullet
         );
     }
 }
