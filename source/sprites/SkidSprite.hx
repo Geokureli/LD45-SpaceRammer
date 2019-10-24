@@ -22,40 +22,41 @@ class SkidSprite extends flixel.FlxSprite {
 			super.updateMotion(elapsed);
 	}
 
-	inline static public function updateMotionSkidDrag(obj:FlxObject, elapsed:Float) {
-		
-		var velocityDelta = 0.5 * (
-			computeVelocity(
-				obj.angularVelocity,
-				obj.angularAcceleration,
-				obj.angularDrag,
-				obj.maxAngular,
-				elapsed
+	inline static public function updateMotionSkidDrag(obj:FlxObject, elapsed:Float)
+	{
+		var velocityDelta = 0.5 * 
+		( computeVelocity
+			( obj.angularVelocity
+			, obj.angularAcceleration
+			, obj.angularDrag
+			, obj.maxAngular
+			, elapsed
 			) - obj.angularVelocity
 		);
 		obj.angularVelocity += velocityDelta; 
 		obj.angle += obj.angularVelocity * elapsed;
 		obj.angularVelocity += velocityDelta;
 		
-		velocityDelta = 0.5 * (
-			computeVelocity(
-				obj.velocity.x,
-				obj.acceleration.x,
-				obj.drag.x,
-				obj.maxVelocity.x,
-				elapsed
-			) - obj.velocity.x);
+		velocityDelta = 0.5 *
+		( computeVelocity
+			( obj.velocity.x
+			, obj.acceleration.x
+			, obj.drag.x
+			, obj.maxVelocity.x
+			, elapsed
+			) - obj.velocity.x
+		);
 		obj.velocity.x += velocityDelta;
 		obj.x += obj.velocity.x * elapsed;
 		obj.velocity.x += velocityDelta;
 		
-		velocityDelta = 0.5 * (
-			computeVelocity(
-				obj.velocity.y,
-				obj.acceleration.y,
-				obj.drag.y,
-				obj.maxVelocity.y,
-				elapsed
+		velocityDelta = 0.5 *
+		( computeVelocity
+			( obj.velocity.y
+			, obj.acceleration.y
+			, obj.drag.y
+			, obj.maxVelocity.y
+			, elapsed
 			) - obj.velocity.y
 		);
 		obj.velocity.y += velocityDelta;
