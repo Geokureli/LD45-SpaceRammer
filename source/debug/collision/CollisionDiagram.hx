@@ -1,16 +1,15 @@
-package debug;
+package debug.collision;
 
-import openfl.text.TextFormat;
-import openfl.text.TextField;
-import openfl.events.KeyboardEvent;
+import openfl.display.Shape;
+import openfl.display.Sprite;
 import openfl.events.Event;
+import openfl.events.KeyboardEvent;
+import openfl.events.MouseEvent;
+import openfl.text.TextField;
+import openfl.text.TextFormat;
 
 import flixel.math.FlxVector;
 import flixel.util.FlxColor;
-
-import openfl.events.MouseEvent;
-import openfl.display.Shape;
-import openfl.display.Sprite;
 
 class CollisionDiagram extends Sprite
 {

@@ -21,7 +21,7 @@ class Main extends Sprite
     function onAddedToStage(e = null) {
         
         #if run_collision_test
-        addChild(new debug.CollisionDiagram());
+        addChild(new debug.collision.CollisionDiagram());
         #else
         final zoom = 1;
         addChild
@@ -29,9 +29,9 @@ class Main extends Sprite
             ( Std.int(stage.stageWidth  / zoom)
             , Std.int(stage.stageHeight / zoom)
             // , states.GameState
-            // , states.CircleTestState
-            , states.GroupCreatorState
-            // , states.ErrorReproState
+            , debug.collision.CircleTestState
+            // , states.GroupCreatorState
+            // , debug.ErrorReproState
             , Std.int(stage.frameRate)
             , Std.int(stage.frameRate)
             )

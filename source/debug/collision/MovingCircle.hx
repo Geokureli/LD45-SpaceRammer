@@ -1,9 +1,9 @@
-package debug;
+package debug.collision;
 
-import openfl.display.Sprite;
 import flixel.util.FlxColor;
 import flixel.math.FlxVector;
 
+import openfl.display.Sprite;
 
 class MovingCircle
 {

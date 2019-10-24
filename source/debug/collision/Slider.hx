@@ -1,11 +1,11 @@
-package debug;
+package debug.collision;
 
-import openfl.display.Sprite;
-import openfl.display.Shape;
-import openfl.text.TextFormat;
 import flixel.util.FlxColor;
 
+import openfl.display.Shape;
+import openfl.display.Sprite;
 import openfl.text.TextField;
+import openfl.text.TextFormat;
 
 class Slider
 {

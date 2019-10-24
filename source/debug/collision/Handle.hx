@@ -1,4 +1,4 @@
-package debug;
+package debug.collision;
 
 import openfl.events.MouseEvent;
 

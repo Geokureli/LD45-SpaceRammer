@@ -1,10 +1,11 @@
-package states;
-
+package debug.collision;
 
 import openfl.display.Graphics;
-import flixel.group.FlxGroup;
+
 import flixel.FlxG;
+import flixel.group.FlxGroup;
 import flixel.util.FlxColor;
+
 import sprites.Circle;
 
 class CircleTestState extends flixel.FlxState

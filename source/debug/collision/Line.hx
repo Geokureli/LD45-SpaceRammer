@@ -1,4 +1,4 @@
-package debug;
+package debug.collision;
 
 import flixel.math.FlxVector;
 import flixel.util.FlxColor;

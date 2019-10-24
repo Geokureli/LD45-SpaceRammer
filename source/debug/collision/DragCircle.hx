@@ -1,8 +1,9 @@
-package debug;
+package debug.collision;
 
 import flixel.math.FlxVector;
-import openfl.display.Sprite;
 import flixel.util.FlxColor;
+
+import openfl.display.Sprite;
 
 class DragCircle
 {

@@ -1,4 +1,4 @@
-package states;
+package debug;
 
 class ErrorReproState extends flixel.FlxState
 {
