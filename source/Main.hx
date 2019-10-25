@@ -5,7 +5,7 @@ import openfl.display.Sprite;
 import flixel.FlxG;
 import flixel.FlxGame;
 
-import ui.Inputs;
+import input.Inputs;
 
 class Main extends Sprite
 {
@@ -29,8 +29,8 @@ class Main extends Sprite
             ( Std.int(stage.stageWidth  / zoom)
             , Std.int(stage.stageHeight / zoom)
             // , states.GameState
-            , debug.collision.CircleTestState
-            // , states.GroupCreatorState
+            // , debug.collision.CircleTestState
+            , states.GroupCreatorState
             // , debug.ErrorReproState
             , Std.int(stage.frameRate)
             , Std.int(stage.frameRate)

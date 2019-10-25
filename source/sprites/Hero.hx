@@ -1,6 +1,6 @@
 package sprites;
 
-import ui.Inputs;
+import input.Inputs;
 import sprites.pods.*;
 
 import flixel.FlxCamera;
