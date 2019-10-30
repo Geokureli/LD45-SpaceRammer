@@ -1,8 +1,5 @@
 package states;
 
-import sprites.Hero;
-import sprites.Enemy;
-
 import haxe.Json;
 
 import openfl.Assets;
@@ -12,6 +9,8 @@ import flixel.FlxG;
 import flixel.FlxState;
 import flixel.tile.FlxTilemap;
 import flixel.group.FlxGroup;
+
+import sprites.pods.PodGroup;
 
 class OgmoState extends FlxState
 {
@@ -94,16 +93,15 @@ class OgmoEntityLayer extends FlxGroup
         
         for (i in 0...data.entities.length)
         {
-            (cast members[i]:IOgmoEntity).ogmoInit(data.entities[i], this);
+            (cast members[i]:IOgmoEntity<Dynamic>).ogmoInit(data.entities[i], this);
         }
     }
     
-    function create(data:OgmoEntityData):FlxBasic
+    function create(data:OgmoEntityData<Dynamic>):FlxBasic
     {
         var entity = switch(data.name)
         {
-            case "Hero": new Hero();
-            case "Enemy": new Enemy();
+            case "Ship": new PodGroup();
             case name: throw 'unhandled entity name: $name';
         }
         
@@ -148,10 +146,10 @@ typedef OgmoTileLayerData
 typedef OgmoEntityLayerData
 = OgmoLayerData
 & {
-    entities:Array<OgmoEntityData>
+    entities:Array<OgmoEntityData<Dynamic>>
 }
 
-typedef OgmoEntityData
+typedef OgmoEntityData<T>
 = {
     name    :String,
     id      :Int,
@@ -160,10 +158,10 @@ typedef OgmoEntityData
     rotation:Float,
     originX :Int,
     originY :Int,
-    values  :Dynamic
+    values  :T
 }
 
-interface IOgmoEntity
+interface IOgmoEntity<T>
 {
-    function ogmoInit(data:OgmoEntityData, parent:OgmoEntityLayer):Void;
+    function ogmoInit(data:OgmoEntityData<T>, parent:OgmoEntityLayer):Void;
 }

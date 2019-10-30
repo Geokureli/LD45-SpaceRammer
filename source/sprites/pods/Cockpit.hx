@@ -1,11 +1,12 @@
 package sprites.pods;
 
 import data.ExplosionGroup;
+import data.PodData;
 
 import flixel.FlxG;
 import flixel.math.FlxVector;
 
-@:allow(sprites.PodGroup)
+@:allow(sprites.pods.PodGroup)
 class Cockpit extends Pod
 {
     inline static var ACCEL_TIME = 0.25;
@@ -30,13 +31,19 @@ class Cockpit extends Pod
         maxSpeed = 150;
     }
     
-    function updateInput(elapsed:Float, thrust:FlxVector, look:FlxVector, shooting:Bool):Void
+    public function updateInput(elapsed:Float, ?thrust:FlxVector, ?look:FlxVector, shooting = false, dashing = false):Void
     {
         firing = shooting;
-		acceleration.copyFrom(thrust);
-        acceleration.scale(maxSpeed / ACCEL_TIME);
         
-        if (!look.isZero())
+        if (thrust != null)
+        {
+            acceleration.copyFrom(thrust);
+            acceleration.scale(maxSpeed / ACCEL_TIME);
+        }
+        else
+            acceleration.set();
+        
+        if (look != null && !look.isZero())
         {
             var lookAngle = look.degrees;
             if (angle >  180) angle -= 360;

@@ -1,14 +1,16 @@
 package sprites.pods;
 
+import flixel.math.FlxAngle;
 import flixel.FlxG;
 import flixel.FlxBasic;
 import flixel.group.FlxGroup;
 import flixel.math.FlxVector;
 
-import sprites.*;
+import data.PodData;
 import data.ExplosionGroup;
+import sprites.*;
 
-@:allow(sprites.PodGroup)
+@:allow(sprites.pods.PodGroup)
 class Pod extends Circle
 {
     inline static public var SCALE = 1.5;
@@ -31,8 +33,8 @@ class Pod extends Circle
     
     public var type     (default, null):PodType;
     public var group    (default, null):Null<PodGroup>;
-    public var parentPod(default, null):Null<Pod>;
-    public var childPods(default, null):Array<Pod> = [];
+    public var parent   (default, null):Null<Pod>;
+    public var children (default, null):Array<Pod> = [];
     public var linkDis  (default, null) = FlxVector.get();
     public var linkAngle(default, null) = 0.0;
     public var maxHealth(default, null) = 0;
@@ -44,7 +46,7 @@ class Pod extends Circle
     public var flingChance(get, never):Float;
     function get_flingChance():Float return timesFlung == 0 ? 1 : 0.5;
     public var free(get, never):Bool;
-    inline function get_free():Bool return parentPod == null && type != Cockpit;
+    inline function get_free():Bool return parent == null && type != Cockpit;
     public var catchable(default, null):Bool = true;
     
     public var exploding(default, null):Bool = false;
@@ -84,8 +86,8 @@ class Pod extends Circle
         this.angle = angle;
         angularVelocity = 0;
         drag.set();
-        parentPod = null;
-        childPods.resize(0);
+        parent = null;
+        children.resize(0);
         linkDis.set();
         linkAngle = 0;
         hitTimer = 0;
@@ -116,6 +118,25 @@ class Pod extends Circle
             case Poker:
                 //mass = 10;
             case Shield:
+        }
+    }
+    
+    function createChildrenFromData(data:ShipData):Void
+    {
+        final groupAngle = group.cockpit.angle;
+        for (i in 0...6)
+        {
+            if (data[i] != null)
+            {
+                var pod = new Pod
+                    ( PodType.createByName(data[i].type)
+                    , x + Math.cos(FlxAngle.TO_RAD * (groupAngle + 60 * i)) * RADIUS * 2
+                    , y + Math.sin(FlxAngle.TO_RAD * (groupAngle + 60 * i)) * RADIUS * 2
+                    , (data[i].angle == null ? 0 : data[i].angle) + groupAngle
+                    );
+                group.linkPod(pod, this);
+                pod.createChildrenFromData(data[i]);
+            }
         }
     }
     
@@ -172,16 +193,16 @@ class Pod extends Circle
     
     function orient(elapsed:Float):Void
     {
-        _v1.copyFrom(linkDis).rotateByDegrees(parentPod.angle);
-        x = parentPod.x + _v1.x;
-        y = parentPod.y + _v1.y;
+        _v1.copyFrom(linkDis).rotateByDegrees(parent.angle);
+        x = parent.x + _v1.x;
+        y = parent.y + _v1.y;
         velocity.set(x - last.x, y - last.y).scale(1 / elapsed);
-        angle = linkAngle + parentPod.angle;
+        angle = linkAngle + parent.angle;
     }
     
     function orientChildren(elapsed:Float):Void
     {
-        for (pod in childPods)
+        for (pod in children)
         {
             pod.orient(elapsed);
             pod.orientChildren(elapsed);
@@ -216,8 +237,8 @@ class Pod extends Circle
         group = parent.group;
         velocity.set();
         angularVelocity = 0;
-        parentPod = parent;
-        parent.childPods.push(this);
+        this.parent = parent;
+        parent.children.push(this);
         linkAngle = angle - parent.angle;
         linkDis = FlxVector.get(x - parent.x, y - parent.y);
         linkDis.length = RADIUS * 2;
@@ -244,10 +265,10 @@ class Pod extends Circle
     {
         exploding = false;
         explosion.visible = true;
-        explosion.start((x + parentPod.x) / 2, (y + parentPod.y) / 2);
+        explosion.start((x + parent.x) / 2, (y + parent.y) / 2);
         final fling = FlxG.random.float(MIN_FLING, MAX_FLING);
         (velocity.copyFrom(linkDis):FlxVector)
-            .rotateByDegrees(parentPod.angle)
+            .rotateByDegrees(parent.angle)
             .normalize()
             .scale(FLING_SPEED);
         
@@ -265,8 +286,8 @@ class Pod extends Circle
         hitTimer = 0;
         alpha = 1;
         alive = true;
-        parentPod.childPods.remove(this);
-        parentPod = null;
+        parent.children.remove(this);
+        parent = null;
         health = maxHealth;
         catchable = false;
         dieTimer = FREE_LIFE_TIME;
@@ -301,10 +322,10 @@ class Pod extends Circle
     
     function dieNow()
     {
-        if (parentPod != null)
+        if (parent != null)
         {
-            parentPod.childPods.remove(this);
-            parentPod = null;
+            parent.children.remove(this);
+            parent = null;
         }
         exploding = false;
         explosion.visible = true;
@@ -317,10 +338,10 @@ class Pod extends Circle
         if (list == null)
             list = [];
         
-        var i = childPods.length;
+        var i = children.length;
         while(i-- > 0)
         {
-            var pod = childPods[i];
+            var pod = children[i];
             if (pod != null && !pod.exploding)
             {
                 list.push(pod);
@@ -374,6 +395,15 @@ class Pod extends Circle
             group.bump(x - velocity.x, y - velocity.y);
             super.bumpFromSeparate(x, y);
         }
+    }
+    
+    override function destroy()
+    {
+        super.destroy();
+        
+        group = null;
+        parent = null;
+        children.resize(0);
     }
     
     inline static public function getGraphic(type:PodType):String

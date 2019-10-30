@@ -22,12 +22,12 @@ class GameState extends OgmoState
     var entities:OgmoEntityLayer;
     var freePods:FlxTypedGroup<Pod>;
     var podGroups:FlxTypedGroup<PodGroup>;
-    var enemies:FlxTypedGroup<Enemy>;
+    var enemies:FlxTypedGroup<PodGroup>;
     var cockpits:FlxTypedGroup<Cockpit>;
     var badBullets:FlxTypedGroup<FlxTypedGroup<Bullet>>;
     var explosions:ExplosionGroup;
     
-    var hero:Hero;
+    var hero:PodGroup;
     var geom:FlxTilemap;
     
     override function create()
@@ -38,7 +38,7 @@ class GameState extends OgmoState
         FlxG.cameras.bgColor = FlxG.stage.color;
         add(stars = drawStars());
         
-        parseLevel("assets/data/Level.json");
+        parseLevel("assets/data/ogmo/Level.json");
         
         geom = getByName("Geom");
         entities = getByName("Entities");
@@ -61,7 +61,7 @@ class GameState extends OgmoState
                 cockpits.add(group.cockpit);
                 if (group != hero)
                 {
-                    enemies.add(Std.downcast(group, Enemy));
+                    enemies.add(group);
                     badBullets.add(group.bullets);
                 }
             }

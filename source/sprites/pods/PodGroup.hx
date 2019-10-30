@@ -1,15 +1,26 @@
-package sprites;
+package sprites.pods;
 
 import flixel.FlxG;
 import flixel.math.FlxVector;
 import flixel.group.FlxGroup;
 
+import ai.Ship;
+import data.PodData;
 import states.OgmoState;
-import sprites.pods.*;
+
+typedef OgmoPod = 
+{ type     :ShipType
+, id       :String
+, maxSpeed :String
+, turnSpeed:String
+, fireRate :String
+, color    :String
+, health   :String
+}
 
 class PodGroup
 extends FlxTypedGroup<Pod>
-implements IOgmoEntity
+implements IOgmoEntity<OgmoPod>
 {
     public var BOUNCE_TIME = 0.5;
     var fireRate = 1.0;
@@ -22,8 +33,9 @@ implements IOgmoEntity
     public var cockpit(default, null):Cockpit;
     public var bullets(default, null):FlxTypedGroup<Bullet> = new FlxTypedGroup();
     
-    var stunTime = 0.0;
+    var controller:Ship;
     
+    var stunTime = 0.0;
     var fireCooldown = 0.0;
     
     public function new (x = 0.0, y = 0.0)
@@ -33,12 +45,24 @@ implements IOgmoEntity
         add(cockpit = new Cockpit(this, x, y));
     }
     
-    public function ogmoInit(data:OgmoEntityData, parent:OgmoEntityLayer):Void
+    public function ogmoInit(data:OgmoEntityData<OgmoPod>, parent:OgmoEntityLayer):Void
     {
         cockpit.x = data.x;
         cockpit.y = data.y;
         if (Reflect.hasField(data, "rotation"))
             cockpit.angle = data.rotation;
+        
+        final rad2 = Pod.RADIUS * 2;
+        
+        cockpit.createChildrenFromData(ShipType.getData(data.values.type));
+        controller = ShipType.getClass(data.values.type);
+        controller.init(this, parent);
+        
+        cockpit.angle = data.rotation;
+        if (data.values.maxSpeed  != "-1") cockpit.maxSpeed     = Std.parseInt(data.values.maxSpeed);
+        if (data.values.turnSpeed != "-1") cockpit.turnSpeed    = Std.parseInt(data.values.turnSpeed);
+        if (data.values.fireRate  != "-1") fireRate             = Std.parseFloat(data.values.fireRate);
+        cockpit.defaultColor = Std.parseInt("0x" + data.values.color.substr(1)) >> 8;
     }
     
     public function linkPod(pod:Pod, parent:Pod = null):Pod
@@ -106,7 +130,10 @@ implements IOgmoEntity
         }
     }
     
-    function updateControls(elapsed:Float):Void { }
+    function updateControls(elapsed:Float):Void
+    {
+        controller.update(elapsed);
+    }
     
     public function checkHealthAndFling(parent:FlxTypedGroup<Pod>, explosions:FlxTypedGroup<Explosion>):Void
     {
