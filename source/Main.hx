@@ -28,17 +28,20 @@ class Main extends Sprite
         ( new FlxGame
             ( Std.int(stage.stageWidth  / zoom)
             , Std.int(stage.stageHeight / zoom)
-            // , states.GameState
+            , states.GameState
             // , debug.collision.CircleTestState
-            , states.GroupCreatorState
+            // , states.GroupCreatorState
             // , debug.ErrorReproState
             , Std.int(stage.frameRate)
             , Std.int(stage.frameRate)
             )
         );
         
-		FlxG.plugins.add(new Inputs());
+        FlxG.plugins.add(new Inputs());
         #end
         
+        #if js
+        stage.showDefaultContextMenu = false;
+        #end
     }
 }

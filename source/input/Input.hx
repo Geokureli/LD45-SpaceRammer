@@ -8,6 +8,7 @@ enum Input {
 	DOWN;
 	LEFT;
 	RIGHT;
-	STONE;
+	SHOOT;
+	DASH;
 	PAUSE;
 }

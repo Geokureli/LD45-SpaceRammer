@@ -36,7 +36,8 @@ class Inputs extends flixel.FlxBasic {
 		, DOWN   => [S, J, DOWN]
 		, LEFT   => [A, K, LEFT]
 		, RIGHT  => [D, L, RIGHT]
-		, STONE  => [Z, SPACE, SHIFT]
+		, SHOOT  => [SPACE, SHIFT]
+		, DASH   => [SPACE, SHIFT]
 		, PAUSE  => [P, ESCAPE, ENTER]
 		];
 	
@@ -47,7 +48,8 @@ class Inputs extends flixel.FlxBasic {
 		, DOWN   => [DPAD_DOWN , LEFT_STICK_DIGITAL_DOWN]
 		, LEFT   => [DPAD_LEFT , LEFT_STICK_DIGITAL_LEFT]
 		, RIGHT  => [DPAD_RIGHT, LEFT_STICK_DIGITAL_RIGHT]
-		, STONE  => [A, B, X, Y, RIGHT_SHOULDER, RIGHT_TRIGGER, LEFT_SHOULDER, LEFT_TRIGGER]
+		, SHOOT  => [RIGHT_SHOULDER, RIGHT_TRIGGER]
+		, DASH   => [LEFT_SHOULDER, LEFT_TRIGGER]
 		, PAUSE  => [START, GUIDE]
 		];
 	
@@ -164,7 +166,8 @@ class InputList {
 			case RIGHT : "RIGHT";
 			case BACK  : "BACK";
 			case PAUSE : "PAUSE";
-			case STONE : "STONE";
+			case SHOOT : "SHOOT";
+			case DASH  : "DASH";
 			case ACCEPT: "ACCEPT";
 		}
 	}
@@ -175,6 +178,7 @@ class InputList {
 	public var DOWN  (get, never):Bool; inline function get_DOWN  () { return get(Input.DOWN  ); };
 	public var LEFT  (get, never):Bool; inline function get_LEFT  () { return get(Input.LEFT  ); };
 	public var RIGHT (get, never):Bool; inline function get_RIGHT () { return get(Input.RIGHT ); };
-	public var STONE (get, never):Bool; inline function get_STONE () { return get(Input.STONE ); };
+	public var SHOOT (get, never):Bool; inline function get_SHOOT () { return get(Input.SHOOT ); };
+	public var DASH  (get, never):Bool; inline function get_DASH  () { return get(Input.DASH  ); };
 	public var PAUSE (get, never):Bool; inline function get_PAUSE () { return get(Input.PAUSE ); };
 }
