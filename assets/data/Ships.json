@@ -1,5 +1,12 @@
-{ "HERO":
+{ "_HERO":
     { "child0":{ "type":"Poker"    }
+    , "child3":{ "type":"Thruster" }
+    }
+, "HERO":
+    { "child0":{ "type":"Poker"
+        , "child2":{ "type":"Laser" }
+        , "child4":{ "type":"Laser" }
+        }
     , "child3":{ "type":"Thruster" }
     }
 , "BROKE":

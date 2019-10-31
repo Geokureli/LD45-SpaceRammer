@@ -7,6 +7,7 @@ import flixel.group.FlxGroup;
 import ai.Ship;
 import data.PodData;
 import states.OgmoState;
+import sprites.bullets.Bullet;
 
 typedef OgmoPod = 
 { type     :ShipType
@@ -23,7 +24,7 @@ extends FlxTypedGroup<Pod>
 implements IOgmoEntity<OgmoPod>
 {
     public var BOUNCE_TIME = 0.5;
-    var fireRate = 1.0;
+    public var fireRate(default, null) = 1.0;
     public var bulletSpeedScale(default, null) = 1.0;
     
     public var x(get, never):Float;
@@ -31,12 +32,11 @@ implements IOgmoEntity<OgmoPod>
     public var angle(get, never):Float;
     
     public var cockpit(default, null):Cockpit;
-    public var bullets(default, null):FlxTypedGroup<Bullet> = new FlxTypedGroup();
+    public var bullets(default, null) = new BulletGroup();
     
     var controller:Ship;
     
     var stunTime = 0.0;
-    var fireCooldown = 0.0;
     
     public function new (x = 0.0, y = 0.0)
     {
@@ -93,33 +93,11 @@ implements IOgmoEntity<OgmoPod>
         if (stunTime == 0)
             updateControls(elapsed);
         
-        var firing = fireCooldown == 0 && cockpit.firing;
-        if (firing)
+        if (cockpit.firing)
         {
-            var fireForce = FlxVector.get();
-            fireCooldown += fireRate;
-            
             for (pod in members)
-            {
-                if (pod != null && pod.alive)
-                {
-                    var bullet = pod.fire(bullets);
-                    if (bullet != null)
-                    {
-                        fireForce.add
-                            ( bullet.velocity.x * -bullet.fireForce / bullet.speed
-                            , bullet.velocity.y * -bullet.fireForce / bullet.speed
-                            );
-                    }
-                }
-            }
-            bump(fireForce.x, fireForce.y);
-        }
-        else if (fireCooldown > 0)
-        {
-            fireCooldown -= elapsed;
-            if (fireCooldown <= 0)
-                fireCooldown = 0;
+                if (pod != null && pod.alive && pod.health > 0)
+                    pod.fireIfReady(elapsed);
         }
         
         if (stunTime > 0)
@@ -173,11 +151,6 @@ implements IOgmoEntity<OgmoPod>
         cockpit.acceleration.set();
         
         stunTime = time;
-    }
-    
-    public function onPoked(attacker:PodGroup, victim:Pod):Void
-    {
-        victim.hit(2);
     }
     
     inline function get_x():Float { return cockpit.x; }

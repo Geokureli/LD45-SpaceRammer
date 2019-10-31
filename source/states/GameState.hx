@@ -13,6 +13,7 @@ import openfl.display.Bitmap;
 import data.ExplosionGroup;
 import sprites.*;
 import sprites.pods.*;
+import sprites.bullets.Bullet;
 import states.OgmoState;
 
 class GameState extends OgmoState
@@ -179,9 +180,9 @@ class GameState extends OgmoState
                 if (pod1.type == Poker || pod2.type == Poker)
                 {
                     if (pod1.type == Poker && pod2.type != Poker)
-                        pod2.group.onPoked(pod1.group, pod2);
+                        pod1.onPoke(pod2);
                     else if (pod2.type == Poker && pod1.type != Poker)
-                        pod1.group.onPoked(pod2.group, pod1);
+                        pod2.onPoke(pod1);
                 }
                 else
                 {
@@ -193,7 +194,7 @@ class GameState extends OgmoState
         
         function processPodBullet(pod:Pod, bullet:Bullet):Bool
         {
-            return pod.health > 0 && Circle.separate(pod, bullet);
+            return pod.canHurt && pod.health > 0 && Circle.separate(pod, bullet);
         }
         
         Circle.overlap(hero, badBullets, 

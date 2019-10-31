@@ -1,5 +1,6 @@
 package sprites.pods;
 
+import data.Cooldown;
 import flixel.math.FlxAngle;
 import flixel.FlxG;
 import flixel.FlxBasic;
@@ -9,6 +10,7 @@ import flixel.math.FlxVector;
 import data.PodData;
 import data.ExplosionGroup;
 import sprites.*;
+import sprites.bullets.Bullet;
 
 @:allow(sprites.pods.PodGroup)
 class Pod extends Circle
@@ -16,7 +18,8 @@ class Pod extends Circle
     inline static public var SCALE = 1.5;
     inline static public var RADIUS = 9 * SCALE;
     inline static public var DIAMETER_SQUARED = RADIUS * RADIUS * 4;
-    inline static var BULLET_SCATTER = 2;
+    inline static var BULLET_SPEED = 550;
+    inline static var BULLET_SCATTER = 5;
     inline static var MIN_SPIN = 90;
     inline static var MAX_SPIN = 720;
     inline static var MIN_FLING = 50;
@@ -39,10 +42,8 @@ class Pod extends Circle
     public var linkAngle(default, null) = 0.0;
     public var maxHealth(default, null) = 0;
     
-    public var dieTimer(default, null) = 0.0;
-    
     public var timesFlung(default, null) = 0;
-    public var flingTimer(default, null) = 0.0;
+    public var flingCooldown(default, null):Cooldown = 0.0;
     public var flingChance(get, never):Float;
     function get_flingChance():Float return timesFlung == 0 ? 1 : 0.5;
     public var free(get, never):Bool;
@@ -52,19 +53,20 @@ class Pod extends Circle
     public var exploding(default, null):Bool = false;
     var explosion:Null<Explosion>;
     
-    var hitTimer = 0.0;
+    public var dieCooldown(default, null):Cooldown = 0.0;
+    var hitCooldown:Cooldown = 0.0;
     public var canHurt(get, never):Bool;
-    inline function get_canHurt():Bool return hitTimer == 0;
-    
+    inline function get_canHurt():Bool return !hitCooldown.cooling;
+    var fireCooldown:Cooldown = 0;
+    var flashCooldown:Cooldown = 0.0;
     var _defaultColor = 0xFFffffff;
     public var defaultColor(get, set):Int;
     inline function get_defaultColor():Int return _defaultColor;
     inline function set_defaultColor(value:Int):Int 
     {
-        _defaultColor = value;
-        if (hitTimer == 0)
+        if (color == _defaultColor)
             color = value;
-        return _defaultColor;
+        return _defaultColor = value;
     }
     
     public function new (type:PodType, x = 0.0, y = 0.0, angle = 0.0)
@@ -90,8 +92,11 @@ class Pod extends Circle
         children.resize(0);
         linkDis.set();
         linkAngle = 0;
-        hitTimer = 0;
-        flingTimer = 0.0;
+        hitCooldown.reset();
+        flashCooldown.reset();
+        dieCooldown.reset();
+        fireCooldown.reset();
+        flingCooldown.reset();
         timesFlung = 0;
         exploding = false;
         catchable = true;
@@ -149,18 +154,15 @@ class Pod extends Circle
         else
             updateLinked(elapsed);
         
-        if (dieTimer > 0)
+        if (dieCooldown.cooling)
         {
-            dieTimer -= elapsed;
-            
-            if (dieTimer <= 0)
+            if (dieCooldown.check(elapsed))
             {
                 dieNow();
-                dieTimer = 0;
                 visible = true;
             }
-            else if (dieTimer < PRE_DIE_FLASH_TIME)
-                visible = (dieTimer / HIT_PERIOD) % 1 > 0.5;
+            else if (dieCooldown.value < PRE_DIE_FLASH_TIME)
+                visible = (dieCooldown.value / HIT_PERIOD) % 1 > 0.5;
         }
     }
     
@@ -172,23 +174,14 @@ class Pod extends Circle
     
     function updateLinked(elapsed:Float):Void
     {
-        if (hitTimer > 0)
-        {
-            hitTimer -= elapsed;
-            color = ((hitTimer / HIT_PERIOD) % 1 > 0.5) ? HIT_COLOR : _defaultColor;
-            if (hitTimer < 0)
-                hitTimer = 0;
-        }
+        hitCooldown.check(elapsed);
         
-        if (flingTimer > 0)
-        {
-            flingTimer -= elapsed;
-            if (flingTimer <= 0)
-            {
-                fling();
-                flingTimer = 0;
-            }
-        }
+        flashCooldown.check(elapsed);
+        if (flashCooldown.cooling)
+            color = ((flashCooldown.value / HIT_PERIOD) % 1 > 0.5) ? HIT_COLOR : _defaultColor;
+        
+        if (flingCooldown.check(elapsed))
+            fling();
     }
     
     function orient(elapsed:Float):Void
@@ -209,20 +202,34 @@ class Pod extends Circle
         }
     }
     
-    public function fire(parent:FlxTypedGroup<Bullet>):Null<Bullet>
+    public function onPoke(victim:Pod):Void
     {
-        if (health <= 0 || !type.match(Rocket|Laser))
-            return null;
+        victim.hit(2);
         
-        var bullet = parent.recycle(Bullet);
-        bullet.init(x, y);
-        (bullet.velocity:FlxVector)
-            .set(bullet.speed, 0)
-            .scale(group.bulletSpeedScale)
-            .rotateByDegrees(angle + FlxG.random.floatNormal(0, BULLET_SCATTER));
-        
-        bullet.velocity.addPoint(group.cockpit.velocity);
-        
+        for (i in 0...4)
+            fire(FlxG.random.floatNormal(BULLET_SPEED * 2, BULLET_SPEED / 4)); 
+    }
+    
+    public function fireIfReady(elapsed:Float):Null<Bullet>
+    {
+        if (type.match(Rocket|Laser) && group.fireRate > 0)
+        {
+            if (fireCooldown.check(elapsed))
+            {
+                fireCooldown += group.fireRate;
+                return fire(BULLET_SPEED);
+            }
+        }
+        return null;
+    }
+    
+    function fire(speed:Float):Null<Bullet>
+    {
+        var bullet = group.bullets.fireFrom(this, speed, BULLET_SCATTER);
+        group.bump
+            ( bullet.velocity.x * -bullet.fireForce / speed
+            , bullet.velocity.y * -bullet.fireForce / speed
+            );
         return bullet;
     }
     
@@ -243,8 +250,9 @@ class Pod extends Circle
         linkDis = FlxVector.get(x - parent.x, y - parent.y);
         linkDis.length = RADIUS * 2;
         linkDis.degrees = Math.round((linkDis.degrees - parent.angle) / 60) * 60;
-        dieTimer = 0;
+        dieCooldown.reset();
         visible = true;
+        fireCooldown = FlxG.random.float(0, group.fireRate);
     }
     
     function delayFling(explosions:ExplosionGroup, delay = 0.0):Void
@@ -258,7 +266,7 @@ class Pod extends Circle
         if (delay <= 0)
             fling();
         else
-            flingTimer = delay;
+            flingCooldown = delay;
     }
     
     function fling():Void
@@ -283,14 +291,16 @@ class Pod extends Circle
     {
         color = defaultColor;
         group = null;
-        hitTimer = 0;
+        hitCooldown.reset();
+        flashCooldown.reset();
+        fireCooldown.reset();
         alpha = 1;
         alive = true;
         parent.children.remove(this);
         parent = null;
         health = maxHealth;
         catchable = false;
-        dieTimer = FREE_LIFE_TIME;
+        dieCooldown = FREE_LIFE_TIME;
     }
     
     public function bumpGroupAtLinkAngle(power:Float):Void
@@ -317,7 +327,7 @@ class Pod extends Circle
         if (delay <= 0)
             dieNow();
         else
-            dieTimer = delay;
+            dieCooldown = delay;
     }
     
     function dieNow()
@@ -356,11 +366,12 @@ class Pod extends Circle
     
     public function hit(damage = 1):Void
     {
-        if (hitTimer > 0)
+        if (hitCooldown.cooling)
             return;
         
         health -= damage;
-        hitTimer = 0.5;
+        // hitCooldown = 0.5;
+        flashCooldown = 0.5;
     }
     
     

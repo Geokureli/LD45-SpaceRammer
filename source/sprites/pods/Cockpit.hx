@@ -90,7 +90,7 @@ class Cockpit extends Pod
             while (i-- > 0)
             {
                 var pod = group.members[i];
-                if (pod.alive && pod.health <= 0 && pod.hitTimer == 0)
+                if (pod.alive && pod.health <= 0 && pod.canHurt)
                     pod.explode(explosions);
             }
         }

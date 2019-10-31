@@ -61,8 +61,8 @@ class Hero extends Ship
             ( elapsed
             , thrust
             , focus
-            , Inputs.pressed.SHOOT || FlxG.mouse.justPressed     //TODO: check mouse in Inputs
-            , Inputs.pressed.DASH  || FlxG.mouse.justPressedRight//TODO: check mouse in Inputs
+            , Inputs.pressed.SHOOT || FlxG.mouse.pressed     //TODO: check mouse in Inputs
+            , Inputs.pressed.DASH  || FlxG.mouse.pressedRight//TODO: check mouse in Inputs
             );
     }
     
