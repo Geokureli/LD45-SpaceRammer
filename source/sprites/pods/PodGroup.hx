@@ -5,6 +5,7 @@ import flixel.math.FlxVector;
 import flixel.group.FlxGroup;
 
 import ai.Ship;
+import data.Gun;
 import data.PodData;
 import states.OgmoState;
 import sprites.bullets.Bullet;
@@ -34,8 +35,13 @@ implements IOgmoEntity<OgmoPod>
     public var cockpit(default, null):Cockpit;
     public var bullets(default, null) = new BulletGroup();
     
-    var controller:Ship;
+    public var guns(default, null):Map<PodType, Gun> =
+        [ Laser  => new Gun()
+        , Rocket => new Gun()
+        , Poker  => new Gun(4, 550, 0.5, Force(Normal(0.25), true))
+        ];
     
+    var controller:Ship;
     var stunTime = 0.0;
     
     public function new (x = 0.0, y = 0.0)

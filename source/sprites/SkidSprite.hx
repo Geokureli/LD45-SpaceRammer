@@ -1,5 +1,6 @@
 package sprites;
 
+import flixel.math.FlxVector;
 import flixel.FlxObject;
 import flixel.math.FlxMath;
 
@@ -12,14 +13,34 @@ class SkidSprite extends flixel.FlxSprite {
 	// Hack to allow drag when acellerating opposite to velocity
 	// --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 	
+	public var normalDrag:Float = 0.0;
+	
 	var skidDrag = true;
 	
-	override function updateMotion(elapsed:Float) { 
+	override function updateMotion(elapsed:Float)
+	{
+		var applyNormalDrag = false;
+		if (normalDrag > 0)
+		{
+			applyNormalDrag = (acceleration:FlxVector).isZero()
+				|| (skidDrag && (velocity:FlxVector).dotProduct(acceleration) < 0);
+		}
 		
 		if(skidDrag)
 			updateMotionSkidDrag(this, elapsed);
 		else
 			super.updateMotion(elapsed);
+		
+		if (applyNormalDrag)
+		{
+			if ((velocity:FlxVector).lengthSquared <= normalDrag * normalDrag)
+				velocity.set();
+			else
+			{
+				var length = (velocity:FlxVector).length;
+				velocity.scale((length - normalDrag) / length);
+			}
+		}
 	}
 
 	inline static public function updateMotionSkidDrag(obj:FlxObject, elapsed:Float)

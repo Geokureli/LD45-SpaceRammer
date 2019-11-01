@@ -23,6 +23,7 @@ class Cockpit extends Pod
     }
     public var turnSpeed = 90.0;
     public var firing = false;
+    public var hitCooldownTime = 0.25;
     
     public function new (group, x = 0.0, y = 0.0, angle = 0.0)
     {

@@ -46,6 +46,7 @@ class Pod extends Circle
     public var flingCooldown(default, null):Cooldown = 0.0;
     public var flingChance(get, never):Float;
     function get_flingChance():Float return timesFlung == 0 ? 1 : 0.5;
+    
     public var free(get, never):Bool;
     inline function get_free():Bool return parent == null && type != Cockpit;
     public var catchable(default, null):Bool = true;
@@ -156,7 +157,7 @@ class Pod extends Circle
         
         if (dieCooldown.cooling)
         {
-            if (dieCooldown.check(elapsed))
+            if (dieCooldown.tickAndCheckFire(elapsed))
             {
                 dieNow();
                 visible = true;
@@ -174,13 +175,12 @@ class Pod extends Circle
     
     function updateLinked(elapsed:Float):Void
     {
-        hitCooldown.check(elapsed);
+        hitCooldown.tick(elapsed);
         
-        flashCooldown.check(elapsed);
-        if (flashCooldown.cooling)
+        if (flashCooldown.tick(elapsed).cooling)
             color = ((flashCooldown.value / HIT_PERIOD) % 1 > 0.5) ? HIT_COLOR : _defaultColor;
         
-        if (flingCooldown.check(elapsed))
+        if (flingCooldown.tickAndCheckFire(elapsed))
             fling();
     }
     
@@ -205,32 +205,24 @@ class Pod extends Circle
     public function onPoke(victim:Pod):Void
     {
         victim.hit(2);
-        
-        for (i in 0...4)
-            fire(FlxG.random.floatNormal(BULLET_SPEED * 2, BULLET_SPEED / 4)); 
+        fire(); 
     }
     
-    public function fireIfReady(elapsed:Float):Null<Bullet>
+    public function fireIfReady(elapsed:Float)
     {
         if (type.match(Rocket|Laser) && group.fireRate > 0)
         {
-            if (fireCooldown.check(elapsed))
+            if (fireCooldown.tickAndCheckFire(elapsed, false))
             {
                 fireCooldown += group.fireRate;
-                return fire(BULLET_SPEED);
+                fire();
             }
         }
-        return null;
     }
     
-    function fire(speed:Float):Null<Bullet>
+    function fire()
     {
-        var bullet = group.bullets.fireFrom(this, speed, BULLET_SCATTER);
-        group.bump
-            ( bullet.velocity.x * -bullet.fireForce / speed
-            , bullet.velocity.y * -bullet.fireForce / speed
-            );
-        return bullet;
+        group.guns[type].fire(group.bullets, this);
     }
     
     public function setLinked(parent:Pod = null):Void

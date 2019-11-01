@@ -1,10 +1,13 @@
 package sprites.bullets;
 
+
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.group.FlxGroup;
 import flixel.math.FlxVector;
 
+import data.Cooldown;
+import data.Gun;
 import sprites.pods.Pod;
 
 abstract BulletGroup(FlxTypedGroup<Bullet>) to FlxTypedGroup<Bullet>
@@ -14,26 +17,19 @@ abstract BulletGroup(FlxTypedGroup<Bullet>) to FlxTypedGroup<Bullet>
         this = new FlxTypedGroup<Bullet>(maxSize);
     }
     
-    inline public function fire(x = 0.0, y = 0.0)
+    inline public function fire()
     {
-        return this.recycle(Bullet).init(x, y);
-    }
-    
-    inline public function fireFrom(pod:Pod, speed:Float, scatterAngle:Float)
-    {
-        var bullet = fire(pod.x, pod.y).setPolarVelocity(speed, pod.angle, scatterAngle);
-        bullet.velocity.addPoint(pod.velocity);
-        return bullet;
+        return this.recycle(Bullet);
     }
 }
 
 class Bullet extends Circle
 {
     inline static var SCALE = 3;
+    
     public var damage       (default, null) = 0;
-    public var lifeTime     (default, null) = 0.0;
-    public var lifeRemaining(default, null) = 0.0;
-    public var fireForce    (default, null) = 0.0;
+    public var lifetime     (default, null) = 0.0;
+    public var lifeRemaining(default, null):Cooldown = 0;
     public var impactForce  (default, null) = 0.0;
     
     public function new (x = 0.0, y = 0.0)
@@ -41,35 +37,89 @@ class Bullet extends Circle
         super(4.0 * SCALE, x, y);
     }
     
-    public function init(x = 0.0, y = 0.0):Bullet
+    public function init(pod:Pod, gun:Gun):Bullet
     {
-        this.x = x;
-        this.y = y;
+        this.x = pod.x;
+        this.y = pod.y;
         
-        // elasticity = 1;
-        damage = 1;
-        lifeTime = 1;
-        lifeRemaining = lifeTime;
-        fireForce = 50;
-        impactForce = 100;
-        setRadius(4.0 * SCALE);
-        loadGraphic("assets/images/bullet.png", true);
-        animation.add("idle", [0,1], 15);
-        animation.play("idle");
-        width  = (graphic.width  - 2) * SCALE;
-        height = (graphic.height - 2) * SCALE;
-        scale.set(SCALE, SCALE);
+        var shootAngle = pod.angle + switch(gun.scatter)
+        {
+            case null: 0;
+            case Angle(spread): spread.getRandom();
+            default: 0;
+        }
+        setPolarVelocity(gun.speed, shootAngle);
+        switch(gun.scatter)
+        {
+            case null | Angle(_)://handled above
+            case Force(value, null, true): applyProjectedForce(value.getRandom(), value.getRandom(), true);
+            case Force(value, null, _   ): applyProjectedForce(value.getRandom(), value.getRandom());
+            case Force(par  , perp, true): applyProjectedForce(par  .getRandom(), (perp:Distribution).getRandom(), true);
+            case Force(par  , perp, _   ): applyProjectedForce(par  .getRandom(), (perp:Distribution).getRandom());
+        }
+        velocity.addPoint(pod.group.cockpit.velocity);
+        pod.group.bump
+            ( velocity.x * -gun.fireForceRatio / gun.speed
+            , velocity.y * -gun.fireForceRatio / gun.speed
+            );
+        
+        lifeRemaining = lifetime = gun.lifetime;
+        normalDrag  = gun.drag;
+        damage      = gun.damage;
+        impactForce = gun.speed / gun.impactForceRatio;
+        
+        switch (gun.graphic)
+        {
+            case Static(asset):
+                loadGraphic(asset);
+            case Animated(asset, width, height):
+                loadGraphic
+                    ( asset
+                    , true
+                    , width  == null ? 0 : width
+                    , height == null ? 0 : height
+                    );
+                animation.add("idle", [for (i in 0...animation.frames) i], 15);
+                animation.play("idle");
+        }
+        
+        var newRadius = gun.radius;
+        if (newRadius == null)
+            newRadius = Math.min(graphic.width, graphic.height);
+        
+        radius = newRadius * gun.scale;
+        
+        scale.set(gun.scale, gun.scale);
+        width  = (graphic.width  - 2) * gun.scale;
+        height = (graphic.height - 2) * gun.scale;
         centerOffsets();
+        return this;
+    }
+    
+    inline public function setPolarVelocity(speed:Float, angle:Float):Bullet
+    {
+        (velocity:FlxVector).set(speed, 0).rotateByDegrees(angle);
         
         return this;
     }
     
-    inline public function setPolarVelocity(speed:Float, angle:Float, scatterAngle:Float):Bullet
+    inline public function applyProjectedForce(parallel:Float, perpendicular:Float, rational = false)
     {
-        (velocity:FlxVector)
-            .set(speed, 0)
-            .rotateByDegrees(angle + FlxG.random.floatNormal(0, scatterAngle));
-        
+        if (!rational)
+        {
+            var length = (velocity:FlxVector).length;
+            velocity.add
+                ( velocity.x * parallel / length - velocity.y * perpendicular / length
+                , velocity.y * parallel / length + velocity.x * perpendicular / length
+                );
+        }
+        else
+        {
+            velocity.add
+                ( velocity.x * parallel - velocity.y * perpendicular
+                , velocity.y * parallel + velocity.x * perpendicular
+                );
+        }
         return this;
     }
     
@@ -77,8 +127,7 @@ class Bullet extends Circle
     {
         super.update(elapsed);
         
-        lifeRemaining -= elapsed;
-        if (lifeRemaining <= 0)
+        if (lifeRemaining.tickAndCheckFire(elapsed))
             kill();
     }
     

@@ -18,24 +18,20 @@ class Circle extends SkidSprite
     inline static var B_COLOR = 0xFF0000FF;
     #end
     
-    @:noCompletion
-    var _radius = 0.0;
-    public var radius(get, never):Float;
-    inline function get_radius() return _radius;
+    public var radius(default, set):Float;
+    inline function set_radius(value:Float):Float
+    {
+        width = value * 2;
+        height = value * 2;
+        //offset.set(value, value);
+        return this.radius = value;
+    }
     
     public function new(radius:Float, x = 0.0, y = 0.0, ?graphic)
     {
         super(x, y, graphic);
         
-        setRadius(radius);
-    }
-    
-    inline function setRadius(radius:Float):Void
-    {
-        _radius = radius;
-        width = radius * 2;
-        height = radius * 2;
-        //offset.set(radius, radius);
+        this.radius = radius;
     }
     
     inline static function sqr(num:Float) return num * num;

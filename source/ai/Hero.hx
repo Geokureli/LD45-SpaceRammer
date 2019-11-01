@@ -18,6 +18,8 @@ class Hero extends Ship
     {
         super.init(group, parent);
         
+        group.cockpit.hitCooldownTime = 0;
+        
         FlxG.camera.follow(group.cockpit, FlxCameraFollowStyle.TOPDOWN);
         lastMouseScreenPos.set(FlxG.mouse.screenX, FlxG.mouse.screenY);
     }
