@@ -81,15 +81,60 @@ class Circle extends SkidSprite
         velocity.set(x, y);
     }
     
+    static public function overlapComplex(a:Circle, b:Circle):Bool
+    {
+        if (a.immovable && b.immovable)
+            return false;
+        
+        var radSum = a.radius + b.radius;
+        if (sqr(a.x - b.x) + sqr(a.y - b.y) <= sqr(radSum)
+        ||  sqr(a.last.x - b.last.x) + sqr(a.last.y - b.last.y) <= sqr(radSum))
+            return true;
+        
+        #if debug
+        drawDebugMovingCircle(a, A_COLOR);
+        drawDebugMovingCircle(b, B_COLOR);
+        #end
+        
+        var dis = FlxVector.get().copyFrom(b.last).subtractPoint(a.last);
+        var aFrameVel = FlxVector.get(a.x - a.last.x, a.y - a.last.y);
+        var bFrameVel = FlxVector.get(b.x - b.last.x, b.y - b.last.y);
+        var vDif = aFrameVel.subtractNew(bFrameVel);
+        aFrameVel.put();
+        bFrameVel.put();
+        var par = dis.projectTo(vDif);
+        var perp = dis.projectTo(vDif.rightNormal(FlxVector.weak()));
+        dis.put();
+        
+        #if debug
+        drawDebugLine(a.last.x, a.last.y, a.last.x + vDif.x, a.last.y + vDif.y, 0xFFFFFF, 4);
+        drawDebugLine(a.last.x, a.last.y, a.last.x + par.x, a.last.y + par.y, 0xFF00);
+        drawDebugLine(a.last.x + par.x, a.last.y + par.y, a.last.x + par.x + perp.x, a.last.y + par.y + perp.y, 0xFF00);
+        #end
+        
+        var isOverlapping = false;
+        if (perp.lengthSquared < sqr(radSum) && par.dotProduct(vDif) > 0)
+        {
+            var tLength = par.length - Math.sqrt((radSum * radSum) - perp.lengthSquared);
+            isOverlapping = sqr(tLength) < vDif.lengthSquared;
+        }
+        
+        vDif.put();
+        par.put();
+        perp.put();
+        
+        return isOverlapping;
+    }
+    
     static public function separate(a:Circle, b:Circle):Bool
     {
         if (a.immovable && b.immovable)
             return false;
         
         var radSum = a.radius + b.radius;
-        if (sqr(a.x - b.x) + sqr(a.y - b.y) > sqr(radSum)
-        &&  sqr(a.last.x - b.last.x) + sqr(a.last.y - b.last.y) > sqr(radSum))
-            return false;
+        // if (sqr(a.x - b.x) + sqr(a.y - b.y) > sqr(radSum)
+        // &&  sqr(a.last.x - b.last.x) + sqr(a.last.y - b.last.y) > sqr(radSum))
+        //     return false;
         
         #if debug
         drawDebugMovingCircle(a, A_COLOR);
