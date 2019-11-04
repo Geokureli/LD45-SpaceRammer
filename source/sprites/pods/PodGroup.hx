@@ -1,5 +1,6 @@
 package sprites.pods;
 
+import data.ExplosionGroup;
 import flixel.FlxG;
 import flixel.math.FlxVector;
 import flixel.group.FlxGroup;
@@ -33,12 +34,13 @@ implements IOgmoEntity<OgmoPod>
     public var angle(get, never):Float;
     
     public var cockpit(default, null):Cockpit;
-    public var bullets(default, null) = new BulletGroup();
+    public var bullets:BulletGroup;
+    public var explosions:ExplosionGroup;
     
     public var guns(default, null):Map<PodType, Gun> =
-        [ Laser  => new Gun()
+        [ Laser  => new Gun(DisAndTime(400, 0.66, FromStop), Angle(Even(5)))
         , Rocket => new Gun()
-        , Poker  => new Gun(4, 550, 0.5, Force(Normal(0.25), true))
+        , Poker  => new Gun(4, DisAndTime(200, 0.25, ToStop), Force(Normal(0.25), true))
         ];
     
     var controller:Ship;

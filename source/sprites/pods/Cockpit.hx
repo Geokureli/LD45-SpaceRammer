@@ -14,12 +14,12 @@ class Cockpit extends Pod
     
     override function get_flingChance():Float return 0;
     
-    public var maxSpeed(default, set):Float = 0;
+    public var maxSpeed(get, set):Float;
+    function get_maxSpeed():Float return radialMaxVelocity;
     function set_maxSpeed(value:Float)
     {
-        drag.set(value / DECEL_TIME, value / DECEL_TIME);
-        maxVelocity.set(value, value);
-        return maxSpeed = value;
+        radialDrag = value / DECEL_TIME;
+        return radialMaxVelocity = value;
     }
     public var turnSpeed = 90.0;
     public var firing = false;

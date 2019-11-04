@@ -18,8 +18,9 @@ class Pod extends Circle
     inline static public var SCALE = 1.5;
     inline static public var RADIUS = 9 * SCALE;
     inline static public var DIAMETER_SQUARED = RADIUS * RADIUS * 4;
+    
+    inline static var FACING_ANGLE_INTERVAL = 60;
     inline static var BULLET_SPEED = 550;
-    inline static var BULLET_SCATTER = 5;
     inline static var MIN_SPIN = 90;
     inline static var MAX_SPIN = 720;
     inline static var MIN_FLING = 50;
@@ -60,10 +61,10 @@ class Pod extends Circle
     inline function get_canHurt():Bool return !hitCooldown.cooling;
     var fireCooldown:Cooldown = 0;
     var flashCooldown:Cooldown = 0.0;
-    var _defaultColor = 0xFFffffff;
+    var _defaultColor = 0xffffff;
     public var defaultColor(get, set):Int;
     inline function get_defaultColor():Int return _defaultColor;
-    inline function set_defaultColor(value:Int):Int 
+    function set_defaultColor(value:Int):Int 
     {
         if (color == _defaultColor)
             color = value;
@@ -88,7 +89,7 @@ class Pod extends Circle
         this.type = type;
         this.angle = angle;
         angularVelocity = 0;
-        drag.set();
+        radialDrag = 0;
         parent = null;
         children.resize(0);
         linkDis.set();
@@ -238,7 +239,7 @@ class Pod extends Circle
         angularVelocity = 0;
         this.parent = parent;
         parent.children.push(this);
-        linkAngle = angle - parent.angle;
+        linkAngle = Math.round((angle - parent.angle) / FACING_ANGLE_INTERVAL) * FACING_ANGLE_INTERVAL;
         linkDis = FlxVector.get(x - parent.x, y - parent.y);
         linkDis.length = RADIUS * 2;
         linkDis.degrees = Math.round((linkDis.degrees - parent.angle) / 60) * 60;
@@ -272,7 +273,7 @@ class Pod extends Circle
             .normalize()
             .scale(FLING_SPEED);
         
-        drag.set(1, 1).scale(sqr(FLING_SPEED) / 2 / fling);
+        radialDrag = sqr(FLING_SPEED) / 2 / fling;
         angularVelocity = FlxG.random.float(MIN_SPIN, MAX_SPIN);
         angularDrag = angularVelocity / FREE_LIFE_TIME;
         bumpGroupAtLinkAngle(200);

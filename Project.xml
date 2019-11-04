@@ -45,6 +45,7 @@
 
     <haxelib name="flixel"/>
     <haxelib name="flixel-addons"/>
+    <haxelib name="safety"/>
     
     <!--In case you want to use nape with flixel-->
     <!--haxelib name="nape" /-->

@@ -29999,7 +29999,7 @@
           "values": {
             "type": "HERO",
             "id": "hero",
-            "maxSpeed": "300",
+            "maxSpeed": "400",
             "turnSpeed": "360",
             "fireRate": "0.25",
             "health": "-1",

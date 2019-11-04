@@ -59,29 +59,17 @@ class Bullet extends Circle
         }
         velocity.addPoint(pod.group.cockpit.velocity);
         pod.group.bump
-            ( velocity.x * -gun.fireForceRatio / gun.speed
-            , velocity.y * -gun.fireForceRatio / gun.speed
+            ( velocity.x * -gun.fireForceRatio
+            , velocity.y * -gun.fireForceRatio
             );
         
-        lifeRemaining = lifetime = gun.lifetime;
-        normalDrag  = gun.drag;
+        lifeRemaining = lifetime = gun.time;
+        radialDrag  = gun.drag;
+        (acceleration:FlxVector).set(gun.accel).degrees = shootAngle;
         damage      = gun.damage;
         impactForce = gun.speed / gun.impactForceRatio;
         
-        switch (gun.graphic)
-        {
-            case Static(asset):
-                loadGraphic(asset);
-            case Animated(asset, width, height):
-                loadGraphic
-                    ( asset
-                    , true
-                    , width  == null ? 0 : width
-                    , height == null ? 0 : height
-                    );
-                animation.add("idle", [for (i in 0...animation.frames) i], 15);
-                animation.play("idle");
-        }
+        gun.graphic.loadGraphic(this);
         
         var newRadius = gun.radius;
         if (newRadius == null)

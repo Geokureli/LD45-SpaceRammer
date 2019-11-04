@@ -25,7 +25,7 @@ class GameState extends OgmoState
     var podGroups:FlxTypedGroup<PodGroup>;
     var enemies:FlxTypedGroup<PodGroup>;
     var cockpits:FlxTypedGroup<Cockpit>;
-    var badBullets:FlxTypedGroup<FlxTypedGroup<Bullet>>;
+    var badBullets:BulletGroup;
     var explosions:ExplosionGroup;
     
     var hero:PodGroup;
@@ -51,19 +51,20 @@ class GameState extends OgmoState
         enemies = new FlxTypedGroup();
         cockpits = new FlxTypedGroup();
         add(explosions = new ExplosionGroup());
-        add(hero.bullets);
-        add(badBullets = new FlxTypedGroup());
+        add(hero.bullets = new BulletGroup());
+        add(badBullets = new BulletGroup());
         for (member in entities.members)
         {
             if (Std.is(member, PodGroup))
             {
                 var group:PodGroup = cast member;
+                group.explosions = explosions;
                 podGroups.add(group);
                 cockpits.add(group.cockpit);
                 if (group != hero)
                 {
                     enemies.add(group);
-                    badBullets.add(group.bullets);
+                    group.bullets = badBullets;
                 }
             }
         }
@@ -111,6 +112,12 @@ class GameState extends OgmoState
             if (group.alive)
                 group.checkHealthAndFling(freePods, explosions);
         }
+        
+        if (FlxG.keys.justPressed.ONE  ) freePods.add(new Pod(Laser   , FlxG.mouse.x, FlxG.mouse.y));
+        if (FlxG.keys.justPressed.TWO  ) freePods.add(new Pod(Rocket  , FlxG.mouse.x, FlxG.mouse.y));
+        if (FlxG.keys.justPressed.THREE) freePods.add(new Pod(Thruster, FlxG.mouse.x, FlxG.mouse.y));
+        if (FlxG.keys.justPressed.FOUR ) freePods.add(new Pod(Poker   , FlxG.mouse.x, FlxG.mouse.y));
+        if (FlxG.keys.justPressed.FIVE ) freePods.add(new Pod(Shield  , FlxG.mouse.x, FlxG.mouse.y));
     }
     
     function updateStars():Void
@@ -147,10 +154,6 @@ class GameState extends OgmoState
                 pod.group.cockpit.x + pod.x - p.x;
                 pod.group.cockpit.y + pod.y - p.y;
                 pod.group.bump(pod.velocity.x - v.x, pod.velocity.y - v.y);
-                // if(pod.isTouching(FlxObject.UP   )) pod.group.bump( 0  ,  400);
-                // if(pod.isTouching(FlxObject.DOWN )) pod.group.bump( 0  , -400);
-                // if(pod.isTouching(FlxObject.LEFT )) pod.group.bump( 400,  0  );
-                // if(pod.isTouching(FlxObject.RIGHT)) pod.group.bump(-400,  0  );
             },
             function (a:Pod, b):Bool
             {
@@ -169,8 +172,9 @@ class GameState extends OgmoState
             },
             function (used:Pod, free:Pod):Bool
             {
-                return free.free && free.catchable;
+                return free.free && free.catchable
                     //&& Pod.separate(used, free);
+                    ;
             }
         );
         
@@ -197,12 +201,12 @@ class GameState extends OgmoState
             return pod.canHurt && pod.health > 0 && Circle.separate(pod, bullet);
         }
         
-        Circle.overlap(hero, badBullets, 
+        Circle.overlap(hero, badBullets,
             function(pod:Pod, bullet:Bullet)
             {
                 pod.hit(bullet.damage);
                 bullet.onHit(pod);
-                explosions.create(22.5).start(bullet.x, bullet.y);
+                explosions.create(7.5 * bullet.scale.x).start(bullet.x, bullet.y);
             },
             processPodBullet
         );
