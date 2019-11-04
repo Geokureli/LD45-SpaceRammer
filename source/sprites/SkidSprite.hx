@@ -13,113 +13,126 @@ class SkidSprite extends flixel.FlxSprite {
 	// Hack to allow drag when acellerating opposite to velocity
 	// --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 	
-	public var normalDrag:Float = 0.0;
-	
-	var skidDrag = true;
+	public var skidDrag = true;
+	public var useRadialMotion = true;
+	public var radialDrag = 0.0;
+	public var radialMaxVelocity = 0.0;
 	
 	override function updateMotion(elapsed:Float)
 	{
-		var applyNormalDrag = false;
-		if (normalDrag > 0)
-		{
-			applyNormalDrag = (acceleration:FlxVector).isZero()
-				|| (skidDrag && (velocity:FlxVector).dotProduct(acceleration) < 0);
-		}
-		
-		if(skidDrag)
-			updateMotionSkidDrag(this, elapsed);
-		else
-			super.updateMotion(elapsed);
-		
-		if (applyNormalDrag)
-		{
-			if ((velocity:FlxVector).lengthSquared <= normalDrag * normalDrag)
-				velocity.set();
-			else
-			{
-				var length = (velocity:FlxVector).length;
-				velocity.scale((length - normalDrag) / length);
-			}
-		}
-	}
-
-	inline static public function updateMotionSkidDrag(obj:FlxObject, elapsed:Float)
-	{
 		var velocityDelta = 0.5 * 
 		( computeVelocity
-			( obj.angularVelocity
-			, obj.angularAcceleration
-			, obj.angularDrag
-			, obj.maxAngular
-			, elapsed
-			) - obj.angularVelocity
+			(angularVelocity, angularAcceleration, angularDrag, skidDrag, maxAngular, elapsed)
+			- angularVelocity
 		);
-		obj.angularVelocity += velocityDelta; 
-		obj.angle += obj.angularVelocity * elapsed;
-		obj.angularVelocity += velocityDelta;
+		angularVelocity += velocityDelta; 
+		angle += angularVelocity * elapsed;
+		angularVelocity += velocityDelta;
 		
-		velocityDelta = 0.5 *
-		( computeVelocity
-			( obj.velocity.x
-			, obj.acceleration.x
-			, obj.drag.x
-			, obj.maxVelocity.x
-			, elapsed
-			) - obj.velocity.x
-		);
-		obj.velocity.x += velocityDelta;
-		obj.x += obj.velocity.x * elapsed;
-		obj.velocity.x += velocityDelta;
-		
-		velocityDelta = 0.5 *
-		( computeVelocity
-			( obj.velocity.y
-			, obj.acceleration.y
-			, obj.drag.y
-			, obj.maxVelocity.y
-			, elapsed
-			) - obj.velocity.y
-		);
-		obj.velocity.y += velocityDelta;
-		obj.y += obj.velocity.y * elapsed;
-		obj.velocity.y += velocityDelta;
+		if (useRadialMotion)
+		{
+			var vDelta = computeRadialVelocity
+				(velocity, acceleration, radialDrag, skidDrag, radialMaxVelocity, elapsed)
+				.subtractPoint(velocity)
+				.scale(0.5);
+			
+			velocity.addPoint(vDelta);
+			x += velocity.x * elapsed;
+			y += velocity.y * elapsed;
+			velocity.addPoint(vDelta);
+		}
+		else
+		{
+			velocityDelta = 0.5 *
+			( computeVelocity
+				(velocity.x, acceleration.x, drag.x, skidDrag, maxVelocity.x, elapsed)
+				- velocity.x
+			);
+			velocity.x += velocityDelta;
+			x += velocity.x * elapsed;
+			velocity.x += velocityDelta;
+			
+			velocityDelta = 0.5 *
+			( computeVelocity
+				(velocity.y, acceleration.y, drag.y, skidDrag, maxVelocity.y, elapsed)
+				- velocity.y
+			);
+			velocity.y += velocityDelta;
+			y += velocity.y * elapsed;
+			velocity.y += velocityDelta;
+		}
 	}
 
-	static function computeVelocity(velocity:Float, acceleration:Float, drag:Float, max:Float, elapsed:Float):Float
+	static function computeVelocity
+	( velocity    :Float
+	, acceleration:Float
+	, drag        :Float
+	, skidDrag    :Bool
+	, max         :Float
+	, elapsed     :Float
+	):Float
 	{
 		if (acceleration != 0)
-		{
 			velocity += acceleration * elapsed;
-		}
 		
-		if (drag != 0 && (acceleration == 0 || !FlxMath.sameSign(velocity, acceleration)))
+		if (drag != 0 && (acceleration == 0 || (skidDrag && !FlxMath.sameSign(velocity, acceleration))))
 		{
 			var drag:Float = drag * elapsed;
 			if (velocity - drag > 0)
-			{
 				velocity -= drag;
-			}
 			else if (velocity + drag < 0)
-			{
 				velocity += drag;
-			}
 			else
-			{
 				velocity = 0;
-			}
 		}
 		
 		if ((velocity != 0) && (max != 0))
 		{
 			if (velocity > max)
-			{
 				velocity = max;
-			}
 			else if (velocity < -max)
-			{
 				velocity = -max;
-			}
 		}
 		return velocity;
+	}
+	
+	static function computeRadialVelocity
+	( velocity    :FlxVector
+	, acceleration:FlxVector
+	, drag        :Float
+	, skidDrag    :Bool
+	, max         :Float
+	, elapsed     :Float
+	):FlxVector
+	{
+		var newVelocity = FlxVector.get()
+			.copyFrom(velocity)
+			.add(acceleration.x * elapsed, acceleration.y * elapsed);
+		
+		var length = newVelocity.length;
+		if
+		( drag > 0
+		&&  ( acceleration.isZero()
+			|| (skidDrag && newVelocity.dotProduct(acceleration) < 0)
+			)
+		)
+		{
+			var drag = drag * elapsed;
+			if (length <= drag)
+			{
+				newVelocity.set();
+				length = 0;
+			}
+			else
+			{
+				newVelocity.scale((length - drag) / length);
+				length -= drag;
+			}
+		}
+		
+		if (max > 0 && length > 0 && length > max)
+			newVelocity.length = max;
+		
+		return newVelocity;
 	}
 }
