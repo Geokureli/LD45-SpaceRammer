@@ -120,7 +120,7 @@ class TestCircle extends Circle
             );
         
         if (color == null)
-            color = FlxColor.fromHSB(FlxG.random.float(0, 360), 1, .7);
+            color = FlxColor.WHITE;//FlxColor.fromHSB(FlxG.random.float(0, 360), 1, .7);
         this.color = color;
     }
     
