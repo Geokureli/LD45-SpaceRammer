@@ -198,7 +198,7 @@ class GameState extends OgmoState
         
         function processPodBullet(pod:Pod, bullet:Bullet):Bool
         {
-            return pod.canHurt && pod.health > 0 && Circle.separate(pod, bullet);
+            return pod.canHurt && pod.health > 0 && Circle.overlapThisFrame(pod, bullet);
         }
         
         Circle.overlap(hero, badBullets,
