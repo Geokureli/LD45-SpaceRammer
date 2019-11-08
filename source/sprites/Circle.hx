@@ -148,8 +148,61 @@ class Circle extends SkidSprite
         return isOverlapping;
     }
     
+    /**
+     * Computes the earliest time that the 2 circles overlapped during this frame, 
+     * @param a     A circle
+     * @param b     A circle
+     * @return If null, they never overlapped. Otherwise a number from 0.0 - 1.0 is returned where 0 is the
+     * beginning of the frame and 1 is the end.
+     */
+    static public function computeOverlapTime(a:Circle, b:Circle):Null<Float>
+    {
+        if (a.immovable && b.immovable)
+            return null;
+        
+        var radSum = a.radius + b.radius;
+        if (sqr(a.last.x - b.last.x) + sqr(a.last.y - b.last.y) < sqr(radSum))
+            return 0;
+        
+        #if debug
+        drawDebugMovingCircle(a, A_COLOR);
+        drawDebugMovingCircle(b, B_COLOR);
+        #end
+        
+        var dis = FlxVector.get().copyFrom(b.last).subtractPoint(a.last);
+        var aFrameVel = FlxVector.get(a.x - a.last.x, a.y - a.last.y);
+        var bFrameVel = FlxVector.get(b.x - b.last.x, b.y - b.last.y);
+        var vDif = aFrameVel.subtractNew(bFrameVel);
+        var par = dis.projectTo(vDif);
+        var perp = dis.projectTo(vDif.rightNormal(FlxVector.weak()));
+        dis.put();
+        
+        #if debug
+        drawDebugLine(a.last.x, a.last.y, a.last.x + vDif.x, a.last.y + vDif.y, 0xFFFFFF, 4);
+        drawDebugLine(a.last.x, a.last.y, a.last.x + par.x, a.last.y + par.y, 0xFF00);
+        drawDebugLine(a.last.x + par.x, a.last.y + par.y, a.last.x + par.x + perp.x, a.last.y + par.y + perp.y, 0xFF00);
+        #end
+        
+        var t:Null<Float> = null;
+        if (perp.lengthSquared < sqr(radSum) && par.dotProduct(vDif) > 0)
+        {
+            var tLength = par.length - Math.sqrt((radSum * radSum) - perp.lengthSquared);
+            if (tLength * tLength < vDif.lengthSquared)// && tLength >= 0)
+                t = tLength / vDif.length;
+        }
+        
+        aFrameVel.put();
+        bFrameVel.put();
+        vDif.put();
+        par.put();
+        perp.put();
+        
+        return t;
+    }
+    
     static public function separate(a:Circle, b:Circle):Bool
     {
+        //TODO: use computeOverlapTime?
         if (a.immovable && b.immovable)
             return false;
         
@@ -256,8 +309,8 @@ class Circle extends SkidSprite
                 
                 //change actual velocity
                 // trace(a.velocity.toString(), b.velocity.toString());
-                aPerp = (a.velocity:FlxVector).projectTo(wallNorm, aPerp);
-                bPerp = (b.velocity:FlxVector).projectTo(wallNorm, bPerp);
+                aPerp = a.velocity.projectTo(wallNorm, aPerp);
+                bPerp = b.velocity.projectTo(wallNorm, bPerp);
                 average.copyFrom(aPerp).addPoint(bPerp).scale(0.5);
                 aVel.copyFrom(a.velocity);
                 bVel.copyFrom(b.velocity);
