@@ -23,6 +23,7 @@ class Cockpit extends Pod
     }
     public var turnSpeed = 90.0;
     public var firing = false;
+    public var dashing = false;
     public var hitCooldownTime = 0.25;
     
     public function new (group, x = 0.0, y = 0.0, angle = 0.0)
@@ -32,9 +33,10 @@ class Cockpit extends Pod
         maxSpeed = 150;
     }
     
-    public function updateInput(elapsed:Float, ?thrust:FlxVector, ?look:FlxVector, shooting = false, dashing = false):Void
+    public function updateInput(elapsed:Float, ?thrust:FlxVector, ?look:FlxVector, firing = false, dashing = false):Void
     {
-        firing = shooting;
+        this.firing = firing;
+        this.dashing = dashing;
         
         if (thrust != null)
         {
