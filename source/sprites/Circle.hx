@@ -25,23 +25,32 @@ class Circle extends SkidSprite
     inline function get_cY() return y + radius;
     inline function set_cY(value:Float) return y = value - radius;
     
-    public var radius(default, set):Float;
-    inline function set_radius(value:Float):Float
+    public var radius:Float;
+    /**
+     * sets the radius and updates the hitbox.
+     * @param value 
+     */
+    public function setRadius(value:Float)
     {
-        width = value * 2;
-        height = value * 2;
-        //offset.set(value, value);
-        return this.radius = value;
+        radius = value;
+        updateHitbox();
     }
     
     public function new(radius:Float, x = 0.0, y = 0.0, ?graphic)
     {
         super(x, y, graphic);
         
-        this.radius = radius;
+        setRadius(radius);
     }
     
     inline static function sqr(num:Float) return num * num;
+    
+    override function updateHitbox()
+    {
+        width = radius * 2;
+        height = radius * 2;
+        offset.set(-0.5 * (width - frameWidth), -0.5 * (height - frameHeight));
+    }
     
     function overlapCircle(circle:Circle):Bool
     {
