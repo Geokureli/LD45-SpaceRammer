@@ -390,6 +390,7 @@ class Pod extends Circle
         }
     }
     
+    @:noCompletion
     override function bumpFromSeparate(x:Float, y:Float):Void
     {
         if (group == null || type == Cockpit)
