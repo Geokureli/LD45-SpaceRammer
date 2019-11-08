@@ -5,6 +5,7 @@ import flixel.FlxSprite;
 import flixel.math.FlxVector;
 import flixel.system.FlxAssets;
 
+import data.MotionType;
 import sprites.bullets.Bullet;
 import sprites.pods.Pod;
 
@@ -17,13 +18,14 @@ class Gun
         = Animated("assets/images/bullet.png");
     
     public var shotsPerFire    (default, null) = 1;
+    public var fireRate        (default, null) = 0.25;
     public var graphic         (default, null) = defaultGraphic;
     public var fireForceRatio  (default, null) = 0.1;
     public var impactForceRatio(default, null) = 0.2;
-    public var damage          (default, null) = 1;
+    public var damage          (default, null) = 1.0;
     public var scale           (default, null) = 3.0;
     public var scatter         (default, null):Null<ScatterType> = Angle(Even(5));
-    public var radius          (default, null):Float = null;
+    public var radius          (default, null):Null<Float> = null;
     
     var motionData:MotionData;
     public var time (get, never):Float; inline function get_time () return motionData.time;
@@ -34,9 +36,10 @@ class Gun
     
     public function new
     ( shotsPerFire = 1
+    , fireRate     = 0.25
     , ?graphic    :BulletGraphicType
     , ?motion     :MotionType
-    , damage       = 1
+    , damage       = 1.0
     , ?scatter    :ScatterType
     )
     {
@@ -85,6 +88,13 @@ class DistributionTools
             case Normal(deviation): FlxG.random.floatNormal(0, deviation);
         }
     }
+}
+
+typedef BulletAttack =
+{
+    damage:Float,
+    impactForce:Float,
+    ?pierce:Int
 }
 
 @:using(Gun.GraphicTools)

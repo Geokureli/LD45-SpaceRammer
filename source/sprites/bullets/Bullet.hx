@@ -4,11 +4,14 @@ package sprites.bullets;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.group.FlxGroup;
+import flixel.math.FlxAngle;
 import flixel.math.FlxVector;
 
 import data.Cooldown;
 import data.Gun;
 import sprites.pods.Pod;
+
+using Safety;
 
 abstract BulletGroup(FlxTypedGroup<Bullet>) to FlxTypedGroup<Bullet>
 {
@@ -27,10 +30,11 @@ class Bullet extends Circle
 {
     inline static var SCALE = 3;
     
-    public var damage       (default, null) = 0;
+    public var damage       (default, null) = 0.0;
     public var lifetime     (default, null) = 0.0;
     public var lifeRemaining(default, null):Cooldown = 0;
     public var impactForce  (default, null) = 0.0;
+    public var pierce       (default, null) = 0;
     
     public function new (x = 0.0, y = 0.0)
     {
@@ -39,8 +43,9 @@ class Bullet extends Circle
     
     public function init(pod:Pod, gun:Gun):Bullet
     {
-        this.x = pod.x;
-        this.y = pod.y;
+        gun.graphic.loadGraphic(this);
+        scale.set(gun.scale, gun.scale);
+        setRadius(gun.radius.or(width / 2 * gun.scale));
         
         var shootAngle = pod.angle + switch(gun.scatter)
         {
@@ -48,7 +53,11 @@ class Bullet extends Circle
             case Angle(spread): spread.getRandom();
             default: 0;
         }
-        setPolarVelocity(gun.speed, shootAngle);
+        // place on pod perimiter
+        velocity.setFromDegrees(shootAngle);
+        cX = pod.cX + velocity.x * (radius + pod.radius);
+        cY = pod.cY + velocity.y * (radius + pod.radius);
+        velocity.scale(gun.speed);
         switch(gun.scatter)
         {
             case null | Angle(_)://handled above
@@ -57,6 +66,7 @@ class Bullet extends Circle
             case Force(par  , perp, true): applyProjectedForce(par  .getRandom(), (perp:Distribution).getRandom(), true);
             case Force(par  , perp, _   ): applyProjectedForce(par  .getRandom(), (perp:Distribution).getRandom());
         }
+        
         velocity.addPoint(pod.group.cockpit.velocity);
         pod.group.bump
             ( velocity.x * -gun.fireForceRatio
@@ -65,29 +75,10 @@ class Bullet extends Circle
         
         lifeRemaining = lifetime = gun.time;
         radialDrag  = gun.drag;
-        (acceleration:FlxVector).set(gun.accel).degrees = shootAngle;
+        acceleration.set(gun.accel).degrees = shootAngle;
         damage      = gun.damage;
         impactForce = gun.speed / gun.impactForceRatio;
-        
-        gun.graphic.loadGraphic(this);
-        
-        var newRadius = gun.radius;
-        if (newRadius == null)
-            newRadius = Math.min(graphic.width, graphic.height);
-        
-        radius = newRadius * gun.scale;
-        
-        scale.set(gun.scale, gun.scale);
-        width  = (graphic.width  - 2) * gun.scale;
-        height = (graphic.height - 2) * gun.scale;
-        centerOffsets();
-        return this;
-    }
-    
-    inline public function setPolarVelocity(speed:Float, angle:Float):Bullet
-    {
-        (velocity:FlxVector).set(speed, 0).rotateByDegrees(angle);
-        
+        // pierce      = gun.pierce;
         return this;
     }
     
@@ -95,7 +86,7 @@ class Bullet extends Circle
     {
         if (!rational)
         {
-            var length = (velocity:FlxVector).length;
+            var length = velocity.length;
             velocity.add
                 ( velocity.x * parallel / length - velocity.y * perpendicular / length
                 , velocity.y * parallel / length + velocity.x * perpendicular / length
@@ -121,6 +112,8 @@ class Bullet extends Circle
     
     public function onHit(pod:Pod):Void
     {
+        var forceScaler = impactForce / velocity.length;
+        pod.group.bump(velocity.x * forceScaler, velocity.y * forceScaler);
         kill();
     }
 }

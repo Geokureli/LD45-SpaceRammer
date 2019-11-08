@@ -16,7 +16,6 @@ typedef OgmoPod =
 , id       :String
 , maxSpeed :String
 , turnSpeed:String
-, fireRate :String
 , color    :String
 , health   :String
 }
@@ -26,8 +25,6 @@ extends FlxTypedGroup<Pod>
 implements IOgmoEntity<OgmoPod>
 {
     public var BOUNCE_TIME = 0.5;
-    public var fireRate(default, null) = 1.0;
-    public var bulletSpeedScale(default, null) = 1.0;
     
     public var x(get, never):Float;
     public var y(get, never):Float;
@@ -40,7 +37,7 @@ implements IOgmoEntity<OgmoPod>
     public var guns(default, null):Map<PodType, Gun> =
         [ Laser  => new Gun(DisAndTime(400, 0.66, FromStop), Angle(Even(5)))
         , Rocket => new Gun()
-        , Poker  => new Gun(4, DisAndTime(200, 0.25, ToStop), Force(Normal(0.25), true))
+        , Poker  => new Gun(4, DisAndTime(200, 0.25, ToStop), 0.25, Force(Normal(0.25), true))
         ];
     
     var controller:Ship;
@@ -69,7 +66,6 @@ implements IOgmoEntity<OgmoPod>
         cockpit.angle = data.rotation;
         if (data.values.maxSpeed  != "-1") cockpit.maxSpeed     = Std.parseInt(data.values.maxSpeed);
         if (data.values.turnSpeed != "-1") cockpit.turnSpeed    = Std.parseInt(data.values.turnSpeed);
-        if (data.values.fireRate  != "-1") fireRate             = Std.parseFloat(data.values.fireRate);
         cockpit.defaultColor = Std.parseInt("0x" + data.values.color.substr(1)) >> 8;
     }
     
@@ -101,12 +97,12 @@ implements IOgmoEntity<OgmoPod>
         if (stunTime == 0)
             updateControls(elapsed);
         
-        if (cockpit.firing)
-        {
-            for (pod in members)
-                if (pod != null && pod.alive && pod.health > 0)
-                    pod.fireIfReady(elapsed);
-        }
+        // if (cockpit.firing)
+        // {
+        //     for (pod in members)
+        //         if (pod != null && pod.alive && pod.health > 0)
+        //             pod.fireIfReady(elapsed);
+        // }
         
         if (stunTime > 0)
         {

@@ -1,14 +1,15 @@
 package sprites.pods;
 
-import data.Cooldown;
 import flixel.math.FlxAngle;
 import flixel.FlxG;
 import flixel.FlxBasic;
 import flixel.group.FlxGroup;
 import flixel.math.FlxVector;
 
-import data.PodData;
+import data.Cooldown;
+import data.Gun;
 import data.ExplosionGroup;
+import data.PodData;
 import sprites.*;
 import sprites.bullets.Bullet;
 
@@ -59,7 +60,13 @@ class Pod extends Circle
     var hitCooldown:Cooldown = 0.0;
     public var canHurt(get, never):Bool;
     inline function get_canHurt():Bool return !hitCooldown.cooling;
+    
+    var hasGun(get, never):Bool;
+    inline function get_hasGun() return group.guns.exists(type);
+    var gun(get, never):Null<Gun>;
+    inline function get_gun() return group.guns[type];
     var fireCooldown:Cooldown = 0;
+    
     var flashCooldown:Cooldown = 0.0;
     var _defaultColor = 0xffffff;
     public var defaultColor(get, set):Int;
@@ -78,8 +85,6 @@ class Pod extends Circle
         
         scale.set(SCALE, SCALE);
         updateHitbox();
-        // width *= SCALE;
-        // height *= SCALE;
     }
     
     public function init(type:PodType, x = 0.0, y = 0.0, angle = 0.0):Void
@@ -170,19 +175,36 @@ class Pod extends Circle
     
     function updateFree(elapsed:Float):Void
     {
-        if (!catchable && (velocity:FlxVector).isZero())
+        if (!catchable && velocity.isZero())
             catchable = true;
     }
     
     function updateLinked(elapsed:Float):Void
     {
-        hitCooldown.tick(elapsed);
+        hitCooldown.tick(elapsed, true);
         
         if (flashCooldown.tick(elapsed).cooling)
             color = ((flashCooldown.value / HIT_PERIOD) % 1 > 0.5) ? HIT_COLOR : _defaultColor;
         
         if (flingCooldown.tickAndCheckFire(elapsed))
             fling();
+        
+        if (health > 0)
+        {
+            switch type
+            {
+                case Rocket|Laser:
+                    if (group.cockpit.firing)
+                        fireCooldown.tick(elapsed);
+                    
+                    fireIfReady();
+                case Poker:
+                    fireCooldown.tick(elapsed);
+                    // if (group.cockpit.dashing)
+                        // fireIfReady();
+                case _:
+            }
+        }
     }
     
     function orient(elapsed:Float):Void
@@ -209,15 +231,12 @@ class Pod extends Circle
         fire(); 
     }
     
-    public function fireIfReady(elapsed:Float)
+    function fireIfReady()
     {
-        if (type.match(Rocket|Laser) && group.fireRate > 0)
+        if (gun.fireRate > 0 && fireCooldown.cooled)
         {
-            if (fireCooldown.tickAndCheckFire(elapsed, false))
-            {
-                fireCooldown += group.fireRate;
-                fire();
-            }
+            fireCooldown += gun.fireRate;
+            fire();
         }
     }
     
@@ -245,7 +264,8 @@ class Pod extends Circle
         linkDis.degrees = Math.round((linkDis.degrees - parent.angle) / 60) * 60;
         dieCooldown.reset();
         visible = true;
-        fireCooldown = FlxG.random.float(0, group.fireRate);
+        if (hasGun)
+            fireCooldown = FlxG.random.float(0, gun.fireRate);
     }
     
     function delayFling(explosions:ExplosionGroup, delay = 0.0):Void
@@ -268,7 +288,7 @@ class Pod extends Circle
         explosion.visible = true;
         explosion.start((x + parent.x) / 2, (y + parent.y) / 2);
         final fling = FlxG.random.float(MIN_FLING, MAX_FLING);
-        (velocity.copyFrom(linkDis):FlxVector)
+        velocity.copyFrom(linkDis)
             .rotateByDegrees(parent.angle)
             .normalize()
             .scale(FLING_SPEED);
@@ -357,7 +377,18 @@ class Pod extends Circle
         return list;
     }
     
-    public function hit(damage = 1):Void
+    public function touchPod(damage = 1.0):Void
+    {
+        if (damage > 0)
+            hit(damage);
+        
+        if (type == Poker)
+            fireIfReady();
+        else if (type != Cockpit)
+            parent.touchPod(0);
+    }
+    
+    public function hit(damage = 1.0):Void
     {
         if (hitCooldown.cooling)
             return;

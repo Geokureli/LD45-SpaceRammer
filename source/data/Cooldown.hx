@@ -11,12 +11,12 @@ abstract Cooldown(Float) to Float from Float from Int
     inline function get_value() return this;
     
     
-    inline public function tick(elapsed:Float, resetOnFire = true):Cooldown
+    inline public function tick(elapsed:Float, resetIfCooled = false):Cooldown
     {
         if (cooling)
         {
             this -= elapsed;
-            if (resetOnFire && cooled)
+            if (resetIfCooled && cooled)
                 reset();
         }
         return this;

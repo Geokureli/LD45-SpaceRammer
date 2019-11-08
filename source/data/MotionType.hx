@@ -3,9 +3,12 @@ package data;
 @:using(MotionType.MotionData)
 enum MotionType
 {
-    TimeAndSpeed(time    :Float, speed:Float, ?accel:AccelType);
-    DisAndSpeed (distance:Float, speed:Float, ?accel:AccelType);
-    DisAndTime  (distance:Float, time :Float, ?accel:AccelType);
+    DisAndSpeed (distance:Float, speed   :Float, ?accel:AccelType);
+    DisAndTime  (distance:Float, time    :Float, ?accel:AccelType);
+    SpeedAndTime(speed   :Float, time    :Float, ?accel:AccelType);
+    SpeedAndDis (speed   :Float, distance:Float, ?accel:AccelType);
+    TimeAndDis  (time    :Float, distance:Float, ?accel:AccelType);
+    TimeAndSpeed(time    :Float, speed   :Float, ?accel:AccelType);
 }
 
 class MotionData
@@ -21,7 +24,7 @@ class MotionData
         switch (motion)
         {
             case null:
-            case TimeAndSpeed(t, v, accelType):
+            case TimeAndSpeed(t, v, accelType) | SpeedAndTime(v, t, accelType):
                 data.time = t;
                 switch(accelType)
                 {
@@ -42,7 +45,7 @@ class MotionData
                         data.speed = vi;
                         data.accel = (vi - v) / t;
                 }
-            case DisAndSpeed(d, v, accelType):
+            case DisAndSpeed(d, v, accelType) | SpeedAndDis(v, d, accelType):
                 switch(accelType)
                 {
                     // D = (vf + vi) * t / 2     (*2)
@@ -64,7 +67,7 @@ class MotionData
                         data.time = 2 * d / (v + vi);
                 }
                 
-            case DisAndTime(d, t, accelType):
+            case DisAndTime(d, t, accelType) | TimeAndDis(t, d, accelType):
                 data.time = t;
                 switch(accelType)
                 {
