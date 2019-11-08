@@ -97,7 +97,13 @@ class Circle extends SkidSprite
         velocity.set(x, y);
     }
     
-    static public function overlapComplex(a:Circle, b:Circle):Bool
+    /**
+     * Determines whether 2 circles overlap at any point during this frame
+     * @param a     A circle
+     * @param b     A circle
+     * @return true if they overlap
+     */
+    static public function overlapThisFrame(a:Circle, b:Circle):Bool
     {
         if (a.immovable && b.immovable)
             return false;
