@@ -21,7 +21,7 @@ class Cockpit extends Pod
         radialDrag = value / DECEL_TIME;
         return radialMaxVelocity = value;
     }
-    public var turnSpeed = 90.0;
+    public var turnSpeed = 360.0;
     public var firing = false;
     public var dashing = false;
     public var hitCooldownTime = 0.25;

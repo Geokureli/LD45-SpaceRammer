@@ -16,7 +16,7 @@ class SkidSprite extends flixel.FlxSprite {
 	public var skidDrag = true;
 	public var useRadialMotion = true;
 	public var radialDrag = 0.0;
-	public var radialMaxVelocity = 0.0;
+	public var radialMaxVelocity = 10000.0;
 	
 	override function updateMotion(elapsed:Float)
 	{
@@ -40,6 +40,7 @@ class SkidSprite extends flixel.FlxSprite {
 			x += velocity.x * elapsed;
 			y += velocity.y * elapsed;
 			velocity.addPoint(vDelta);
+			vDelta.put();
 		}
 		else
 		{
