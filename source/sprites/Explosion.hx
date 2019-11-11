@@ -1,12 +1,14 @@
 package sprites;
 
+import flixel.system.FlxAssets;
+
 class Explosion extends flixel.FlxSprite
 {
-    public function new(x = 0.0, y = 0.0)
+    public function new(x = 0.0, y = 0.0, graphicPath:String = "assets/images/explosion.png")
     {
         super(x, y);
         
-        loadGraphic("assets/images/explosion.png", true);
+        loadGraphic(graphicPath, true);
         animation.add("explode", [0, 1, 1], 30, false);
         animation.play("explode", true);
     }
