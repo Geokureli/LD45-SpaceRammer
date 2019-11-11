@@ -39,7 +39,7 @@ class GameState extends OgmoState
         FlxG.cameras.bgColor = FlxG.stage.color;
         add(stars = drawStars());
         
-        parseLevel("assets/data/ogmo/Level.json");
+        parseLevel("assets/data/ogmo/NeedlerTest.json");
         
         geom = getByName("Geom");
         entities = getByName("Entities");
@@ -178,21 +178,11 @@ class GameState extends OgmoState
             }
         );
         
-        Pod.collide(podGroups, podGroups,
+        Pod.collide(hero, enemies,
             function (pod1:Pod, pod2:Pod):Void
             {
-                if (pod1.type == Poker || pod2.type == Poker)
-                {
-                    if (pod1.type == Poker && pod2.type != Poker)
-                        pod1.onPoke(pod2);
-                    else if (pod2.type == Poker && pod1.type != Poker)
-                        pod2.onPoke(pod1);
-                }
-                else
-                {
-                    pod1.hit(1);
-                    pod2.hit(1);
-                }
+                pod1.touchPod(pod1.type == Poker ? 0 : pod2.type == Poker ? 2 : 1);
+                pod2.touchPod(pod2.type == Poker ? 0 : pod1.type == Poker ? 2 : 1);
             }
         );
         
