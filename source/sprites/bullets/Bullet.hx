@@ -41,8 +41,21 @@ class Bullet extends Circle
         super(4.0 * SCALE, x, y);
     }
     
-    public function init(pod:Pod, gun:Gun):Bullet
+    override function reset(X:Float, Y:Float)
     {
+        super.reset(X, Y);
+        
+        scale.set(1, 1);
+        damage = 0;
+        lifetime = 0;
+        lifeRemaining = 0;
+        impactForce = 0;
+        pierce = 0;
+    }
+    
+    public function initFromPodWithGun(pod:Pod, gun:Gun):Bullet
+    {
+        solid = true;
         gun.graphic.loadGraphic(this);
         scale.set(gun.scale, gun.scale);
         setRadius(gun.radius.or(width / 2 * gun.scale));
@@ -106,7 +119,7 @@ class Bullet extends Circle
     {
         super.update(elapsed);
         
-        if (lifeRemaining.tickAndCheckFire(elapsed))
+        if (lifetime > 0 && lifeRemaining.tickAndCheckFire(elapsed))
             kill();
     }
     
@@ -115,5 +128,30 @@ class Bullet extends Circle
         var forceScaler = impactForce / velocity.length;
         pod.group.bump(velocity.x * forceScaler, velocity.y * forceScaler);
         kill();
+    }
+}
+
+abstract Exhaust(Bullet) from Bullet to Bullet
+{
+    public var visible(get, set):Bool;
+    inline function get_visible() return this.visible;
+    inline function set_visible(value:Bool) return this.visible = value;
+    
+    public function init(pod:Pod):Void
+    {
+        this.reset(0, 0);
+        this.solid = false;
+        this.loadGraphic("assets/images/exhaust.png", true);
+        this.animation.add("idle", [0, 1], 15);
+        this.animation.play("idle");
+        this.setRadius(9);
+        followPod(pod);
+    }
+    
+    public function followPod(pod:Pod):Void
+    {
+        this.cX = pod.cX - Math.cos(pod.angle * FlxAngle.TO_RAD) * (this.radius + pod.radius);
+        this.cY = pod.cY - Math.cos(pod.angle * FlxAngle.TO_RAD) * (this.radius + pod.radius);
+        this.angle = pod.angle;
     }
 }

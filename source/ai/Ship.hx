@@ -50,6 +50,9 @@ enum abstract ShipType(String) from String to String
         {
             case HERO: return new Hero();
             case BROKE: return new Ship();
+            case NEEDLER0: return new Needler0();
+            case NEEDLER1: return new Needler0();
+            case NEEDLER2: return new Needler0();
             default: return new Enemy();
         }
     }

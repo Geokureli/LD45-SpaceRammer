@@ -58,7 +58,7 @@ class Gun
     {
         var i = shotsPerFire;
         while (i-- > 0)
-            bullets.fire().init(pod, this);
+            bullets.fire().initFromPodWithGun(pod, this);
     }
 }
 
