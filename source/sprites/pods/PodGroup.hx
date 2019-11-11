@@ -122,6 +122,24 @@ implements IOgmoEntity<OgmoPod>
         controller.update(elapsed);
     }
     
+    public function getFirstCanThrust(dir:FlxVector):Null<Pod>
+    {
+        for (member in members)
+        {
+            if (member != null
+            && member.type == Thruster
+            && member.health > 0
+            && member.checkCanThrust(dir))
+                return member;
+        }
+        return null;
+    }
+    
+    public function canThrust(dir:FlxVector):Bool
+    {
+        return getFirstCanThrust(dir) != null;
+    }
+    
     public function checkHealthAndFling(parent:FlxTypedGroup<Pod>, explosions:FlxTypedGroup<Explosion>):Void
     {
         final freedPods = cockpit.checkHealthAndFling(explosions);
@@ -161,6 +179,24 @@ implements IOgmoEntity<OgmoPod>
         
         stunTime = time;
     }
+    
+    inline public function forEachHealthy(f:(Pod)->Void):Void
+    {
+        for (member in members)
+        {
+            if (member != null && member.health > 0)
+                f(member);
+        }
+    }    
+    
+    inline public function forEachPodType(type:PodType, f:(Pod)->Void, healthy = true):Void
+    {
+        for (member in members)
+        {
+            if (member != null && member.type == type && (!healthy || member.health > 0))
+                f(member);
+        }
+    }    
     
     inline function get_x():Float { return cockpit.x; }
     inline function get_y():Float { return cockpit.y; }

@@ -14,6 +14,8 @@ class Cockpit extends Pod
     
     override function get_flingChance():Float return 0;
     
+    public var dashSpeed:Float;
+    public var normalSpeed:Float;
     public var maxSpeed(get, set):Float;
     function get_maxSpeed():Float return radialMaxVelocity;
     function set_maxSpeed(value:Float)
@@ -22,47 +24,83 @@ class Cockpit extends Pod
         return radialMaxVelocity = value;
     }
     public var turnSpeed = 360.0;
-    public var firing = false;
-    public var dashing = false;
     public var hitCooldownTime = 0.25;
     
     public function new (group, x = 0.0, y = 0.0, angle = 0.0)
     {
         super(Cockpit, x, y, angle);
         this.group = group;
-        maxSpeed = 150;
+        maxSpeed = normalSpeed = 150;
+        dashSpeed = 300;
     }
     
-    public function updateInput(elapsed:Float, ?thrust:FlxVector, ?look:FlxVector, firing = false, dashing = false):Void
+    public function updateInput(elapsed:Float, ?thrust:FlxVector, ?look:FlxVector, shooting = false, dashing = false):Void
     {
-        this.firing = firing;
-        this.dashing = dashing;
+        if (thrust != null && thrust.isZero())
+            thrust = null;
         
-        if (thrust != null)
+        if (look != null && look.isZero())
+            look = null;
+        
+        if (thrust == null)
+            dashing = false;
+        
+        var seekingThruster = dashing;
+        for (pod in group.members)
         {
-            acceleration.copyFrom(thrust);
-            acceleration.scale(maxSpeed / ACCEL_TIME);
+            if (pod != null && pod.health > 0)
+            {
+                switch(pod.type)
+                {
+                    case Laser | Rocket:
+                        pod.firing = shooting;
+                    case Thruster:
+                        pod.firing = seekingThruster && pod.checkCanThrust(thrust);
+                        if (pod.firing)
+                            seekingThruster = false;
+                    case _:
+                        pod.firing = false;
+                }
+            }
+        }
+        // Can't dash if no thruster is avaliable
+        dashing = dashing && !seekingThruster;
+        
+        acceleration.set();
+        if (dashing)
+        {
+            maxSpeed = dashSpeed;
+            velocity.copyFrom(thrust);
+            velocity.length = maxSpeed;
         }
         else
-            acceleration.set();
-        
-        if (look != null && !look.isZero())
         {
-            var lookAngle = look.degrees;
-            if (angle >  180) angle -= 360;
-            if (angle < -180) angle += 360;
-            if (lookAngle - angle >  180) lookAngle -= 360;
-            if (lookAngle - angle < -180) lookAngle += 360;
-            var speed = turnSpeed * elapsed;
-            
-            if (Math.abs(lookAngle - angle) < speed)
-                angle = lookAngle; 
-            else
+            maxSpeed = normalSpeed;
+            if (thrust != null)
             {
-                if (lookAngle - angle < 0)
-                    angle -= speed;
+                acceleration.copyFrom(thrust);
+                acceleration.scale(maxSpeed / ACCEL_TIME);
+            }
+            
+            // Can't turn while dashing
+            if (look != null)
+            {
+                var lookAngle = look.degrees;
+                if (angle >  180) angle -= 360;
+                if (angle < -180) angle += 360;
+                if (lookAngle - angle >  180) lookAngle -= 360;
+                if (lookAngle - angle < -180) lookAngle += 360;
+                var speed = turnSpeed * elapsed;
+                
+                if (Math.abs(lookAngle - angle) < speed)
+                    angle = lookAngle; 
                 else
-                    angle += speed;
+                {
+                    if (lookAngle - angle < 0)
+                        angle -= speed;
+                    else
+                        angle += speed;
+                }
             }
         }
     }

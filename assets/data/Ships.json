@@ -1,13 +1,21 @@
-{ "_HERO":
+{ "HERO_DEFAULT":
     { "child0":{ "type":"Poker"    }
     , "child3":{ "type":"Thruster" }
     }
-, "HERO":
+, "HERO_SHOOTER":
     { "child0":{ "type":"Poker"
         , "child2":{ "type":"Laser" }
         , "child4":{ "type":"Laser" }
         }
     , "child3":{ "type":"Thruster" }
+    }
+, "HERO":
+    { "child0":{"type":"Thruster","angle":180 }
+    , "child1":{"type":"Thruster","angle":240 }
+    , "child2":{"type":"Thruster","angle":-60 }
+    , "child3":{"type":"Thruster","angle":  0 }
+    , "child4":{"type":"Thruster","angle": 60 }
+    , "child5":{"type":"Thruster","angle":120 }
     }
 , "BROKE":
     { "child0":{ "type":"Laser"    }
@@ -23,6 +31,7 @@
 , "NEEDLER0":
     { "child0":{ "type":"Poker"   , "angle":  0 }
     , "child2":{ "type":"Poker"   , "angle":120 }
+    , "child3":{ "type":"Thruster", "angle":  0 }
     , "child4":{ "type":"Poker"   , "angle":240 }
     }
 , "NEEDLER1":

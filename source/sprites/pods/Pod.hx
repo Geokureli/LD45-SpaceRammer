@@ -1,5 +1,6 @@
 package sprites.pods;
 
+import flixel.util.FlxColor;
 import flixel.math.FlxAngle;
 import flixel.FlxG;
 import flixel.FlxBasic;
@@ -16,7 +17,7 @@ import sprites.bullets.Bullet;
 @:allow(sprites.pods.PodGroup)
 class Pod extends Circle
 {
-    inline static public var SCALE = 1.5;
+    inline static public var SCALE = 1;
     inline static public var RADIUS = 9 * SCALE;
     inline static public var DIAMETER_SQUARED = RADIUS * RADIUS * 4;
     
@@ -61,11 +62,15 @@ class Pod extends Circle
     public var canHurt(get, never):Bool;
     inline function get_canHurt():Bool return !hitCooldown.cooling;
     
+    public var firing = false;
     var hasGun(get, never):Bool;
     inline function get_hasGun() return group.guns.exists(type);
     var gun(get, never):Null<Gun>;
     inline function get_gun() return group.guns[type];
     var fireCooldown:Cooldown = 0;
+    
+    var thrustTotal:Float = 1.0;
+    var thrustRemaining:Float = 1.0;
     
     var flashCooldown:Cooldown = 0.0;
     var _defaultColor = 0xffffff;
@@ -186,15 +191,13 @@ class Pod extends Circle
         if (flashCooldown.tick(elapsed).cooling)
             color = ((flashCooldown.value / HIT_PERIOD) % 1 > 0.5) ? HIT_COLOR : _defaultColor;
         
-        if (flingCooldown.tickAndCheckFire(elapsed))
-            fling();
-        
         if (health > 0)
         {
+            var cooldownPercent:Null<Float> = null;
             switch type
             {
                 case Rocket|Laser:
-                    if (group.cockpit.firing)
+                    if (firing)
                         fireCooldown.tick(elapsed);
                     
                     fireIfReady();
@@ -202,9 +205,30 @@ class Pod extends Circle
                     fireCooldown.tick(elapsed);
                     // if (group.cockpit.dashing)
                         // fireIfReady();
+                case Thruster:
+                    cooldownPercent = 0;
+                    if (thrustRemaining > 0 && firing)
+                    {
+                        thrustRemaining -= elapsed;
+                        if (thrustRemaining <= 0)
+                            fireCooldown = 2;
+                        else
+                            cooldownPercent =  1 - (thrustRemaining / thrustTotal / 2);
+                    }
+                    else if (thrustRemaining <= 0 && fireCooldown.tickAndCheckFire(elapsed))
+                        thrustRemaining = thrustTotal;
+                    
                 case _:
             }
+            if (hasGun)
+                cooldownPercent = fireCooldown.value / gun.fireRate;
+            
+            if (cooldownPercent != null)
+                this.color = FlxColor.interpolate(FlxColor.WHITE, FlxColor.RED, cooldownPercent);
         }
+        
+        if (flingCooldown.tickAndCheckFire(elapsed))
+            fling();
     }
     
     function orient(elapsed:Float):Void
@@ -264,8 +288,16 @@ class Pod extends Circle
         linkDis.degrees = Math.round((linkDis.degrees - parent.angle) / 60) * 60;
         dieCooldown.reset();
         visible = true;
-        if (hasGun)
-            fireCooldown = FlxG.random.float(0, gun.fireRate);
+        firing = false;
+        switch type
+        {
+            case Thruster:
+                //exhaust = (group.bullets.fire():Exhaust).init(this);
+                thrustRemaining = thrustTotal;
+            case Laser|Rocket:
+                fireCooldown = FlxG.random.float(0, gun.fireRate);
+            case _:
+        }
     }
     
     function delayFling(explosions:ExplosionGroup, delay = 0.0):Void
@@ -398,6 +430,14 @@ class Pod extends Circle
         flashCooldown = 0.5;
     }
     
+    public function checkCanThrust(dir:FlxVector):Bool
+    {
+        if (type == Thruster
+        && thrustRemaining > 0
+        && Math.abs(FlxAngle.wrapAngle(dir.degrees - angle)) < 30)
+            return true;
+        return false;
+    }
     
     public function checkOverlapPod(pod:Pod, checkHurt = true):Bool
     {

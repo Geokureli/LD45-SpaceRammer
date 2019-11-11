@@ -96,7 +96,7 @@
           "max": 100
         },
         {
-          "name": "turnSpeed",
+          "name": "dashSpeed",
           "definition": "Integer",
           "defaults": -1,
           "bounded": false,
@@ -104,8 +104,8 @@
           "max": 100
         },
         {
-          "name": "fireRate",
-          "definition": "Float",
+          "name": "turnSpeed",
+          "definition": "Integer",
           "defaults": -1,
           "bounded": false,
           "min": 0,

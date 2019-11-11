@@ -29962,8 +29962,8 @@
             "type": "BROKE",
             "id": "",
             "maxSpeed": "-1",
+            "dashSpeed": "-1",
             "turnSpeed": "-1",
-            "fireRate": "-1",
             "health": "-1",
             "color": "#847e87ff"
           }
@@ -29981,8 +29981,8 @@
             "type": "SHOOTER0",
             "id": "",
             "maxSpeed": "-1",
+            "dashSpeed": "-1",
             "turnSpeed": "-1",
-            "fireRate": "-1",
             "health": "-1",
             "color": "#fbf236ff"
           }
@@ -30000,8 +30000,8 @@
             "type": "HERO",
             "id": "hero",
             "maxSpeed": "400",
+            "dashSpeed": "-1",
             "turnSpeed": "360",
-            "fireRate": "0.25",
             "health": "-1",
             "color": "#5fcde4ff"
           }
