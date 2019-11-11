@@ -218,14 +218,12 @@ class GroupCreatorState extends flixel.FlxState
     function rotatePodToMouse(pod:UiPod, socket:Socket)
     {
         var mouse = FlxVector.get(FlxG.mouse.x, FlxG.mouse.y);
-        if (!FlxG.keys.pressed.SHIFT)
-            mouse = roundToNearestHexCoord(mouse);
         
         socket.setPos(mouse.x, mouse.y);
         if (mouse.x != pod.x || mouse.y != pod.y)
         {
             var v = FlxVector.get(mouse.x - pod.x, mouse.y - pod.y);
-            pod.angle = Math.round(v.degrees);
+            pod.angle = cockpit.angle + Math.round((v.degrees - cockpit.angle) / 60) * 60;
             v.put();
         }
         mouse.put();
@@ -244,7 +242,7 @@ class GroupCreatorState extends flixel.FlxState
     
     inline function getIntendedNeighbor(index:Int):Null<UiPod>
     {
-        var nearestDis = Pod.DIAMETER_SQUARED * 4;
+        var nearestDis:Float = Pod.DIAMETER_SQUARED * 4;
         var nearest:UiPod = null;
         
         final mouse = FlxG.mouse;
