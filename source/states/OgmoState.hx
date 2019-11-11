@@ -12,6 +12,8 @@ import flixel.group.FlxGroup;
 
 import sprites.pods.PodGroup;
 
+using Safety;
+
 class OgmoState extends FlxState
 {
     var byName:Map<String, FlxBasic> = new Map();
@@ -164,4 +166,43 @@ typedef OgmoEntityData<T>
 interface IOgmoEntity<T>
 {
     function ogmoInit(data:OgmoEntityData<T>, parent:OgmoEntityLayer):Void;
+}
+
+abstract OgmoValue(String) from String to String
+{
+    public var isEmpty(get, never):Bool;
+    inline function get_isEmpty() return this == "-1";
+        
+    inline public function getColor():Null<Int>
+    {
+        return isEmpty ? null : (Std.parseInt("0x" + this.substr(1)) >> 8);
+    }
+    
+    inline public function getInt  ():Null<Int  > return isEmpty ? null : Std.parseInt(this);
+    inline public function getFloat():Null<Float> return isEmpty ? null : Std.parseFloat(this);
+    inline public function getBool ():Null<Bool > return isEmpty ? null : this == "true";
+}
+
+@:forward abstract OgmoInt(OgmoValue) from String to String
+{
+    public var value(get, never):Null<Int>; inline function get_value() return this.getInt();
+    public var sure(get, never):Int; inline function get_sure() return value.sure();
+}
+
+@:forward abstract OgmoFloat(OgmoValue) from String to String
+{
+    public var value(get, never):Null<Float>; inline function get_value() return this.getFloat();
+    public var sure(get, never):Float; inline function get_sure() return value.sure();
+}
+
+@:forward abstract OgmoBool(OgmoValue) from String to String
+{
+    public var value(get, never):Null<Bool>; inline function get_value() return this.getBool();
+    public var sure(get, never):Bool; inline function get_sure() return value.sure();
+}
+
+@:forward abstract OgmoColor(OgmoValue) from String to String
+{
+    public var value(get, never):Null<Int>; inline function get_value() return this.getColor();
+    public var sure(get, never):Int; inline function get_sure() return value.sure();
 }

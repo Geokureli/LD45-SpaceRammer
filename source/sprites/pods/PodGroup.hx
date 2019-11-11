@@ -14,10 +14,11 @@ import sprites.bullets.Bullet;
 typedef OgmoPod = 
 { type     :ShipType
 , id       :String
-, maxSpeed :String
-, turnSpeed:String
-, color    :String
-, health   :String
+, maxSpeed :OgmoInt
+, dashSpeed:OgmoInt
+, turnSpeed:OgmoInt
+, color    :OgmoColor
+, health   :OgmoInt
 }
 
 class PodGroup
@@ -59,14 +60,18 @@ implements IOgmoEntity<OgmoPod>
         
         final rad2 = Pod.RADIUS * 2;
         
+        cockpit.angle = data.rotation;
+        if (!data.values.maxSpeed.isEmpty)
+            cockpit.maxSpeed = cockpit.normalSpeed = data.values.maxSpeed.sure;
+        if (!data.values.dashSpeed.isEmpty)
+            cockpit.dashSpeed = data.values.dashSpeed.sure;
+        if (!data.values.turnSpeed.isEmpty)
+            cockpit.turnSpeed = data.values.turnSpeed.sure;
+        cockpit.defaultColor = data.values.color.sure;
+        
         cockpit.createChildrenFromData(ShipType.getData(data.values.type));
         controller = ShipType.getClass(data.values.type);
         controller.init(this, parent);
-        
-        cockpit.angle = data.rotation;
-        if (data.values.maxSpeed  != "-1") cockpit.maxSpeed     = Std.parseInt(data.values.maxSpeed);
-        if (data.values.turnSpeed != "-1") cockpit.turnSpeed    = Std.parseInt(data.values.turnSpeed);
-        cockpit.defaultColor = Std.parseInt("0x" + data.values.color.substr(1)) >> 8;
     }
     
     public function linkPod(pod:Pod, parent:Pod = null):Pod
