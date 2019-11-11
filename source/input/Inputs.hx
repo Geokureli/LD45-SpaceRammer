@@ -36,7 +36,7 @@ class Inputs extends flixel.FlxBasic {
 		, DOWN   => [S, J, DOWN]
 		, LEFT   => [A, K, LEFT]
 		, RIGHT  => [D, L, RIGHT]
-		, SHOOT  => [SPACE, SHIFT]
+		, SHOOT  => [SHIFT]
 		, DASH   => [SPACE, SHIFT]
 		, PAUSE  => [P, ESCAPE, ENTER]
 		];
